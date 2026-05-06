@@ -395,6 +395,39 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
           <button class="btn btn-primary" onclick="saveAppDownloadLink()">💾 লিংক সংরক্ষণ করুন</button>
         </div>
         <div class="card">
+          <div class="card-header">🎨 স্প্ল্যাশ স্ক্রিন কাস্টমাইজেশন</div>
+          <p style="font-size:.83em;color:var(--gray-mid);margin-bottom:10px">
+            অ্যাপ ডাউনলোড লিংক থাকলে স্প্ল্যাশ দেখাবে। নিচের লেখাগুলো স্প্ল্যাশে দেখাবে।
+          </p>
+          <div class="field">
+            <label>স্প্ল্যাশ টাইটেল</label>
+            <input type="text" id="splashTitle" placeholder="জ্ঞানাঙ্গন">
+          </div>
+          <div class="field">
+            <label>স্প্ল্যাশ সাবটাইটেল</label>
+            <input type="text" id="splashSubtitle" placeholder="Learn smartly, be smarter.">
+          </div>
+          <div class="field">
+            <label>স্প্ল্যাশ বার্তা (ঐচ্ছিক)</label>
+            <textarea id="splashMessage" rows="3" placeholder="যেমন: ভালো অভিজ্ঞতার জন্য আমাদের অ্যাপটি ডাউনলোড করুন"></textarea>
+          </div>
+          <button class="btn btn-primary" onclick="saveSplashSettings()">💾 স্প্ল্যাশ সংরক্ষণ করুন</button>
+        </div>
+        <div class="card">
+          <div class="card-header">📢 ঘোষণা পপআপ (সব ইউজারের জন্য)</div>
+          <p style="font-size:.83em;color:var(--gray-mid);margin-bottom:10px">
+            এই বার্তা সব লগইন ইউজারের কাছে পপআপ হিসেবে দেখাবে। ইউজার "পড়েছি" ক্লিক করলে তার কাছে আর দেখাবে না। নতুন ঘোষণা দিলে আবার সবার কাছে দেখাবে।
+          </p>
+          <div class="field">
+            <label>ঘোষণার বার্তা</label>
+            <textarea id="announcementText" rows="5" placeholder="এখানে ঘোষণা লিখুন..."></textarea>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="saveAnnouncement()">💾 ঘোষণা সংরক্ষণ ও সবাইকে দেখান</button>
+            <button class="btn btn-danger" onclick="clearAnnouncement()">🗑️ ঘোষণা মুছুন</button>
+          </div>
+        </div>
+        <div class="card">
           <div class="card-header">📊 সিস্টেম তথ্য</div>
           <div id="sysInfo"><div class="empty-msg">লোড হচ্ছে...</div></div>
         </div>
@@ -671,6 +704,25 @@ function adminLogout(){
   clearAdmin();
   goTo('screenAdminLogin');
   showToast('লগআউট হয়েছে', 'info');
+}
+
+async function seedDefaultBatches(){
+  try{
+    let ex = await api('batches?order=id.desc');
+    const rMap = {
+      'সহকারী মৌলবি সাবজেক্টিভ':'সহকারী মৌলবি subjective',
+      'আরবি প্রভাষক সাবজেক্টিভ':'আরবি প্রভাষক subjective',
+      'ইবতেদায়ী মৌলবি Exam Batch':'ইবতেদায়ী মৌলবি Exam',
+      'সহকারী মৌলবি Exam Batch':'সহকারী মৌলবি exam',
+      'আরবি প্রভাষক Exam Batch':'আরবি প্রভাষক exam',
+      'ফ্রি - ডেমো':'ফ্রি'
+    };
+    for(const b of ex) if(rMap[b.name]) await api(`batches?id=eq.${b.id}`, 'PATCH', { name: rMap[b.name] });
+    const desired = ['ফ্রি','আরবি প্রভাষক exam','আরবি প্রভাষক subjective','সহকারী মৌলবি exam','সহকারী মৌলবি subjective','ইবতেদায়ী মৌলবি Exam','ইবতেদায়ী মৌলবি Subjective'];
+    ex = await api('batches?order=id.desc');
+    const names = ex.map(b => b.name);
+    for(const n of desired) if(!names.includes(n)) await api('batches', 'POST', { name:n, password:'1234' });
+  }catch(_){ }
 }
 
 async function seedSettings(){
@@ -1144,6 +1196,7 @@ async function loadAdminSettings(){
       </div>`;
     const appLink = settings && settings[0] ? (settings[0].app_download_link || '') : '';
     document.getElementById('appDownloadLink').value = appLink;
+    await loadSplashAndAnnouncement();
   }catch(e){
     document.getElementById('sysInfo').textContent = 'তথ্য লোড করা যায়নি';
   }
@@ -1177,6 +1230,56 @@ async function saveAppDownloadLink(){
     else await api('settings?id=eq.1', 'PATCH', { app_download_link:link });
     showToast('✅ অ্যাপ লিংক সংরক্ষিত');
   }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
+}
+
+async function loadSplashAndAnnouncement(){
+  try{
+    const s = await api('settings?id=eq.1');
+    if(s && s[0]){
+      document.getElementById('splashTitle').value = s[0].splash_title || 'জ্ঞানাঙ্গন';
+      document.getElementById('splashSubtitle').value = s[0].splash_subtitle || 'Learn smartly, be smarter.';
+      document.getElementById('splashMessage').value = s[0].splash_message || '';
+      document.getElementById('announcementText').value = s[0].announcement_text || '';
+    }
+  }catch(e){console.error('Settings load error:', e);}
+}
+
+async function saveSplashSettings(){
+  const splash_title = document.getElementById('splashTitle').value.trim() || 'জ্ঞানাঙ্গন';
+  const splash_subtitle = document.getElementById('splashSubtitle').value.trim() || 'Learn smartly, be smarter.';
+  const splash_message = document.getElementById('splashMessage').value.trim();
+  try{
+    const s = await api('settings?id=eq.1');
+    const data = { splash_title, splash_subtitle, splash_message };
+    if(s && s.length) await api('settings?id=eq.1', 'PATCH', data);
+    else await api('settings', 'POST', { id:1, ...data });
+    showToast('✅ স্প্ল্যাশ তথ্য সংরক্ষিত');
+  }catch(e){showToast('❌ ব্যর্থ: '+e.message,'error');}
+}
+
+async function saveAnnouncement(){
+  const announcement_text = document.getElementById('announcementText').value.trim();
+  if(!announcement_text){
+    showToast('ঘোষণা লিখুন','error');
+    return;
+  }
+  const announcement_id = Date.now().toString();
+  try{
+    const s = await api('settings?id=eq.1');
+    const data = { announcement_text, announcement_id };
+    if(s && s.length) await api('settings?id=eq.1', 'PATCH', data);
+    else await api('settings', 'POST', { id:1, ...data });
+    showToast('✅ ঘোষণা সংরক্ষিত — সবাই পপআপ দেখতে পাবে');
+  }catch(e){showToast('❌ ব্যর্থ: '+e.message,'error');}
+}
+
+async function clearAnnouncement(){
+  if(!confirm('ঘোষণা মুছে ফেলবেন? সবার কাছে আর পপআপ দেখাবে না।')) return;
+  try{
+    await api('settings?id=eq.1', 'PATCH', { announcement_text:'', announcement_id:'' });
+    document.getElementById('announcementText').value = '';
+    showToast('✅ ঘোষণা মুছে ফেলা হয়েছে');
+  }catch(e){showToast('❌ ব্যর্থ: '+e.message,'error');}
 }
 
 window.onload = async () => {
