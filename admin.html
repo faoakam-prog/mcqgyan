@@ -382,11 +382,12 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
             <div class="field"><label>ব্যাচ ফিল্টার</label><select id="stuFilterBatch" onchange="loadAdminStudents()"><option value="">সব ব্যাচ</option></select></div>
             <div class="field"><label>খুঁজুন</label><input type="text" id="stuSearch" placeholder="নাম বা নম্বর..." oninput="filterStudents()"></div>
           </div>
+          <button class="btn btn-danger btn-small" style="width:auto;margin-top:6px" onclick="deleteSelectedStudents()">🗑 নির্বাচিত মুছুন</button>
         </div>
         <div style="overflow-x:auto">
           <table>
-            <thead><tr><th>#</th><th>নাম</th><th>মোবাইল</th><th>ব্যাচ</th><th>অ্যাকশন</th></tr></thead>
-            <tbody id="adminStBody"><tr><td colspan="5" class="empty-msg">লোড হচ্ছে...</td></tr></tbody>
+            <thead><tr><th><input type="checkbox" id="stuSelectAll" onchange="toggleAllStudents(this.checked)"></th><th>#</th><th>নাম</th><th>মোবাইল</th><th>ব্যাচ</th><th>অ্যাকশন</th></tr></thead>
+            <tbody id="adminStBody"><tr><td colspan="6" class="empty-msg">লোড হচ্ছে...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1479,6 +1480,7 @@ function filterStudents(){
 
 function renderStudentTable(sts){
   document.getElementById('adminStBody').innerHTML = sts.length ? sts.map((s,i) => `<tr>
+      <td><input type="checkbox" class="stuCheck" data-id="${s.id}"></td>
       <td>${i+1}</td><td>${s.name || ''}</td>
       <td style="font-family:monospace">${s.phone || '—'}</td>
       <td>${s.batches?.name || '—'}</td>
@@ -1486,7 +1488,26 @@ function renderStudentTable(sts){
         <button class="btn btn-small btn-gold" onclick="openStudentEdit(${s.id})">✏️</button>
         <button class="btn btn-small btn-danger" onclick="deleteStudent(${s.id})">🗑</button>
       </td>
-    </tr>`).join('') : '<tr><td colspan="5" class="empty-msg">কোনো শিক্ষার্থী নেই</td></tr>';
+    </tr>`).join('') : '<tr><td colspan="6" class="empty-msg">কোনো শিক্ষার্থী নেই</td></tr>';
+}
+
+function toggleAllStudents(checked){
+  document.querySelectorAll('.stuCheck').forEach(cb => cb.checked = checked);
+}
+
+async function deleteSelectedStudents(){
+  const checked = [...document.querySelectorAll('.stuCheck:checked')];
+  if(!checked.length) return showToast('কোনো শিক্ষার্থী নির্বাচন করা নেই', 'error');
+  if(!confirm(`${checked.length} জন শিক্ষার্থী মুছে ফেলবেন?`)) return;
+  try{
+    const ids = checked.map(cb => cb.dataset.id);
+    for(const id of ids){
+      await api(`attempts?student_id=eq.${id}`, 'DELETE');
+      await api(`students?id=eq.${id}`, 'DELETE');
+    }
+    showToast(`✅ ${ids.length} জন শিক্ষার্থী মুছে ফেলা হয়েছে`);
+    loadAdminStudents();
+  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
 }
 
 async function openStudentEdit(id){
