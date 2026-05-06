@@ -1,4 +1,4 @@
-const CACHE = 'gyanangon-v3';
+const CACHE = 'gyanangon-v4';
 const ASSETS = [
   '/',
   '/index.html',
@@ -6,12 +6,10 @@ const ASSETS = [
   '/icon-192.png',
   '/icon-512.png'
 ];
-
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
   self.skipWaiting();
 });
-
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys => Promise.all(
@@ -20,10 +18,14 @@ self.addEventListener('activate', e => {
   );
   self.clients.claim();
 });
-
 self.addEventListener('fetch', e => {
   // Supabase API calls — সরাসরি নেটওয়ার্ক
   if (e.request.url.includes('supabase.co')) {
+    return;
+  }
+  // admin.html — কখনো cache করবে না, সবসময় নেটওয়ার্ক থেকে নেবে
+  if (e.request.url.includes('admin.html')) {
+    e.respondWith(fetch(e.request).catch(() => caches.match('/index.html')));
     return;
   }
   // App shell — cache first, network fallback
