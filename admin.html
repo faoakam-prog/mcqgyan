@@ -419,6 +419,10 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
             এই বার্তা সব লগইন ইউজারের কাছে পপআপ হিসেবে দেখাবে। ইউজার "পড়েছি" ক্লিক করলে তার কাছে আর দেখাবে না। নতুন ঘোষণা দিলে আবার সবার কাছে দেখাবে।
           </p>
           <div class="field">
+            <label>ঘোষণার শিরোনাম</label>
+            <input type="text" id="announcementTitle" placeholder="যেমন: গুরুত্বপূর্ণ ঘোষণা, নোটিশ, সতর্কতা...">
+          </div>
+          <div class="field">
             <label>ঘোষণার বার্তা</label>
             <textarea id="announcementText" rows="5" placeholder="এখানে ঘোষণা লিখুন..."></textarea>
           </div>
@@ -1239,6 +1243,7 @@ async function loadSplashAndAnnouncement(){
       document.getElementById('splashTitle').value = s[0].splash_title || 'জ্ঞানাঙ্গন';
       document.getElementById('splashSubtitle').value = s[0].splash_subtitle || 'Learn smartly, be smarter.';
       document.getElementById('splashMessage').value = s[0].splash_message || '';
+      document.getElementById('announcementTitle').value = s[0].announcement_title || '';
       document.getElementById('announcementText').value = s[0].announcement_text || '';
     }
   }catch(e){console.error('Settings load error:', e);}
@@ -1258,6 +1263,7 @@ async function saveSplashSettings(){
 }
 
 async function saveAnnouncement(){
+  const announcement_title = document.getElementById('announcementTitle').value.trim() || 'ঘোষণা';
   const announcement_text = document.getElementById('announcementText').value.trim();
   if(!announcement_text){
     showToast('ঘোষণা লিখুন','error');
@@ -1266,7 +1272,7 @@ async function saveAnnouncement(){
   const announcement_id = Date.now().toString();
   try{
     const s = await api('settings?id=eq.1');
-    const data = { announcement_text, announcement_id };
+    const data = { announcement_text, announcement_id, announcement_title };
     if(s && s.length) await api('settings?id=eq.1', 'PATCH', data);
     else await api('settings', 'POST', { id:1, ...data });
     showToast('✅ ঘোষণা সংরক্ষিত — সবাই পপআপ দেখতে পাবে');
@@ -1284,6 +1290,7 @@ async function clearAnnouncement(){
 
 window.onload = async () => {
   try{
+    await seedDefaultBatches();
     await seedSettings();
     await refreshGlobalBatches();
   }catch(_){ }
