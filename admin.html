@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a6b3c">
+<title>জ্ঞানাঙ্গন — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;500;600;700&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --green:#1a6b3c; --green-dk:#145530; --green-lt:#2d9e5f; --green-pale:#e8f5ee;
+  --gold:#E87722; --gold-lt:#F5A623; --gold-pale:#FEF0E0;
+  --red:#c0392b; --red-pale:#fdf0ef;
+  --blue:#1a1a1a; --blue-pale:#f0f0f0;
+  --gray:#4a4a4a; --gray-lt:#f5f5f5; --gray-mid:#9a9a9a;
+  --white:#fff; --border:#dde3e8;
+  --shadow:0 2px 12px rgba(0,0,0,.08); --shadow-lg:0 8px 30px rgba(0,0,0,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Serif Bengali',serif;background:#eef4f0;color:var(--gray);line-height:1.6}
+
+/* HEADER */
+.header{background:linear-gradient(135deg,#1a6b3c,#145530);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.2)}
+.header-left{display:flex;align-items:center;gap:12px}
+.logo{font-size:1.2em;font-weight:700;cursor:pointer;user-select:none;letter-spacing:.5px}
+.logo span{color:var(--gold-lt)}
+.logout-btn{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);color:#fff;padding:5px 12px;border-radius:15px;font-size:.8em;cursor:pointer;display:none;font-family:inherit;transition:.2s}
+.logout-btn:hover{background:rgba(255,255,255,.28)}
+.timer-box{background:rgba(255,255,255,.15);padding:5px 14px;border-radius:20px;font-weight:700;display:none;border:1px solid rgba(255,255,255,.3);font-size:.95em;min-width:70px;text-align:center}
+.timer-box.show{display:block}
+.timer-box.danger{background:var(--red);border-color:transparent;animation:blink .8s infinite}
+@keyframes blink{50%{opacity:.6}}
+
+/* SCREENS */
+.screen{display:none;min-height:calc(100vh - 50px);padding:18px 10px}
+.screen.active{display:block;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.container{max-width:700px;margin:0 auto}
+
+/* CARDS */
+.card{background:var(--white);border-radius:14px;padding:20px;margin-bottom:14px;box-shadow:var(--shadow)}
+.card-header{font-size:1.05em;font-weight:700;color:var(--green);margin-bottom:15px;border-bottom:2px solid var(--green-pale);padding-bottom:8px;display:flex;align-items:center;gap:8px}
+
+/* BUTTONS */
+.btn{width:100%;padding:12px;border:none;border-radius:10px;font-family:inherit;font-size:1em;font-weight:700;cursor:pointer;transition:all .2s}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--green);color:#fff}.btn-primary:hover{background:var(--green-dk)}
+.btn-gold{background:var(--gold);color:#fff}.btn-gold:hover{background:#cc6200}
+.btn-danger{background:var(--red);color:#fff}
+.btn-outline{background:transparent;border:2px solid var(--green);color:var(--green)}.btn-outline:hover{background:var(--green-pale)}
+.btn-video{background:#e74c3c;color:#fff}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-small{width:auto;padding:5px 10px;font-size:.78em;margin:2px;border-radius:7px}
+.btn-wa{background:#25D366;color:#fff}
+
+/* FORM */
+.field{margin-bottom:13px}
+.field label{display:block;font-size:.88em;font-weight:600;color:var(--green);margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:.96em;background:var(--gray-lt);transition:border-color .2s}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--green);background:#fff}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.help-text{font-size:.8em;color:var(--gray-mid);margin-top:3px}
+
+/* LIST */
+.list-item{background:var(--white);border-left:4px solid var(--green);padding:14px 16px;margin-bottom:10px;border-radius:10px;box-shadow:var(--shadow);display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:all .2s}
+.list-item:hover{background:var(--green-pale);transform:translateX(2px)}
+.list-item-arc{border-left-color:var(--blue)}.list-item-arc:hover{background:var(--blue-pale)}
+.list-item-done{border-left-color:var(--gray-mid);opacity:.65;cursor:default}
+.list-item-done:hover{background:var(--white);transform:none}
+
+/* QUIZ */
+.progress-bar{background:var(--green-pale);border-radius:999px;height:6px;overflow:hidden;margin-bottom:14px}
+.progress-fill{background:var(--green);height:100%;border-radius:999px;transition:width .3s}
+.q-card{background:var(--white);padding:20px;border-radius:14px;margin-bottom:13px;border-right:4px solid var(--green);box-shadow:var(--shadow)}
+.q-num{font-size:.8em;color:var(--gray-mid);margin-bottom:6px}
+.q-text{font-family:'Amiri',serif;font-size:1.3em;direction:rtl;text-align:right;margin-bottom:14px;color:#1a1a1a;line-height:1.9}
+.opt-btn{display:flex;align-items:center;gap:12px;padding:10px 13px;background:var(--gray-lt);border:1.5px solid var(--border);border-radius:9px;cursor:pointer;direction:rtl;font-family:'Amiri',serif;font-size:1.1em;width:100%;margin-bottom:8px;transition:all .15s;text-align:right}
+.opt-btn:hover{background:var(--green-pale);border-color:var(--green)}
+.opt-btn.selected{background:var(--green-pale);border-color:var(--green);font-weight:bold}
+.opt-letter{min-width:32px;height:32px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:.85em;flex-shrink:0}
+.opt-btn.selected .opt-letter{background:var(--green);color:#fff}
+
+/* RESULT */
+.result-banner{border-radius:14px;padding:24px 20px;text-align:center;margin-bottom:16px;color:#fff}
+.result-banner.pass{background:linear-gradient(135deg,#1a6b3c,#2d9e5f)}
+.result-banner.close{background:linear-gradient(135deg,#E87722,#F5A623)}
+.result-banner.fail{background:linear-gradient(135deg,#c0392b,#e74c3c)}
+.result-banner.practice{background:linear-gradient(135deg,var(--blue),#2a5aa8)}
+.score-big{font-size:2.6em;font-weight:700;margin:8px 0}
+.feedback-msg{font-size:1.05em;font-weight:700;margin-top:8px}
+.score-sub{font-size:.9em;opacity:.88;margin-top:6px;line-height:1.5}
+.stat-grid{display:flex;justify-content:space-around;text-align:center;padding:6px 0}
+.stat-val{font-size:1.5em;font-weight:700}
+.stat-lbl{font-size:.78em;color:var(--gray-mid);margin-top:2px}
+
+/* ADMIN */
+.admin-wrap{display:flex;min-height:calc(100vh - 50px)}
+.sidebar{width:220px;background:#fff;border-right:1px solid var(--border);padding:10px 0;flex-shrink:0}
+.nav-item{padding:12px 18px;cursor:pointer;font-weight:600;color:var(--gray);border-left:3px solid transparent;font-size:.9em;transition:all .15s;display:flex;align-items:center;gap:7px}
+.nav-item:hover{background:var(--green-pale);color:var(--green)}
+.nav-item.active{background:var(--green-pale);color:var(--green);border-left-color:var(--green)}
+.nav-item.danger{color:var(--red)}.nav-item.danger:hover{background:var(--red-pale)}
+.admin-content{flex:1;padding:20px;overflow-y:auto;max-height:calc(100vh - 50px)}
+.admin-page{display:none}.admin-page.active{display:block;animation:fadeIn .25s}
+
+/* TABLES */
+table{width:100%;border-collapse:collapse;font-size:.88em;background:#fff;border-radius:10px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:20px}
+th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--border)}
+th{background:var(--gray-lt);color:var(--green);font-weight:700}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--green-pale)}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex;animation:fadeIn .2s}
+.modal-box{background:#fff;border-radius:16px;padding:26px;max-width:420px;width:100%;box-shadow:var(--shadow-lg)}
+.modal-title{font-size:1.1em;font-weight:700;color:var(--green);margin-bottom:12px}
+.modal-info-row{display:flex;justify-content:space-between;padding:8px 12px;background:var(--green-pale);border-radius:8px;margin-bottom:7px;font-size:.88em;font-weight:600}
+.modal-actions{display:flex;gap:10px;margin-top:16px}
+.modal-actions .btn{flex:1}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#2d3748;color:#fff;padding:10px 22px;border-radius:10px;z-index:1000;display:none;font-size:.9em;box-shadow:var(--shadow-lg);max-width:90vw;text-align:center;pointer-events:none}
+.toast.success{background:var(--green)}.toast.error{background:var(--red)}.toast.info{background:var(--blue)}
+.toast.show{display:block;animation:toastIn .3s}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* PASSWORD TOGGLE */
+.pass-wrap{position:relative}
+.pass-wrap input{padding-right:44px}
+.pass-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1em;color:var(--gray-mid);padding:4px;line-height:1}
+
+/* MISC */
+hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
+.section-title{font-size:1em;font-weight:700;color:var(--green);margin:18px 0 10px;display:flex;align-items:center;gap:6px}
+.empty-msg{text-align:center;padding:28px;color:var(--gray-mid);font-size:.9em}
+.badge{padding:3px 9px;border-radius:12px;font-size:.78em;font-weight:700}
+.badge-g{background:#d4edda;color:#155724}.badge-r{background:#f8d7da;color:#721c24}.badge-b{background:var(--blue-pale);color:var(--blue)}
+
+/* APP SPLASH */
+.splash-overlay{position:fixed;inset:0;background:linear-gradient(160deg,#0f4d29,#1a6b3c,#1a6b3c,#145530);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+.splash-box{background:#fff;border-radius:22px;padding:28px 22px;max-width:380px;width:100%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.3)}
+.splash-logo{height:90px;width:auto;border-radius:10px;margin-bottom:10px}
+.splash-title{font-size:1.5em;font-weight:700;color:var(--green);margin-bottom:4px}
+.splash-subtitle{font-size:.85em;color:var(--gray-mid);margin-bottom:22px}
+.splash-divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--gray-mid);font-size:.8em}
+.splash-divider::before,.splash-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.btn-app-download{background:linear-gradient(135deg,#1a6b3c,#2d9e5f);color:#fff;border:none;padding:13px 16px;border-radius:12px;width:100%;font-family:inherit;font-size:1em;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s;margin-bottom:10px}
+.btn-app-download:hover{background:linear-gradient(135deg,#145530,#1a6b3c);transform:scale(.98)}
+.btn-web-continue{background:transparent;color:var(--green);border:2px solid var(--green);padding:11px 16px;border-radius:12px;width:100%;font-family:inherit;font-size:.95em;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-web-continue:hover{background:var(--green-pale)}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .admin-wrap{flex-direction:column}
+  .sidebar{width:100%;display:flex;overflow-x:auto;border-right:none;border-bottom:1px solid var(--border);padding:5px 0}
+  .nav-item{white-space:nowrap;border-left:none;border-bottom:3px solid transparent;padding:9px 13px;font-size:.82em}
+  .nav-item.active{border-left:none;border-bottom-color:var(--green)}
+  .admin-content{max-height:unset}
+  .form-row-3{grid-template-columns:1fr 1fr}
+}
+@media(max-width:480px){
+  .form-row-3,.form-row{grid-template-columns:1fr}
+}
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo" id="logoBtn">জ্ঞানাঙ্গন <span>Admin</span></div>
+  </div>
+  <button class="logout-btn" id="adminLogoutBtn" onclick="adminLogout()">লগআউট</button>
+</div>
+
+<!-- ADMIN LOGIN -->
+<div class="screen" id="screenAdminLogin">
+  <div class="container" style="max-width:400px;margin-top:50px">
+    <div class="card">
+      <h2 style="text-align:center;color:var(--blue);margin-bottom:6px">🔐 Admin প্যানেল</h2>
+      <p style="text-align:center;font-size:.8em;color:var(--gray-mid);margin-bottom:18px">অ্যাডমিন পাসওয়ার্ড দিয়ে প্রবেশ করুন</p>
+      <div class="field">
+        <label>পাসওয়ার্ড</label>
+        <div class="pass-wrap">
+          <input type="password" id="adminPass" placeholder="পাসওয়ার্ড দিন" onkeydown="if(event.key==='Enter')adminLogin()">
+          <button class="pass-eye" type="button" onclick="pwToggle('adminPass',this)">👁</button>
+        </div>
+      </div>
+      <button class="btn btn-blue" onclick="adminLogin()">প্রবেশ করুন</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="screen" id="screenAdminPanel" style="padding:0">
+  <div class="admin-wrap">
+    <div class="sidebar">
+      <div class="nav-item active" onclick="switchAdminTab('dash',this)">📊 ড্যাশবোর্ড</div>
+      <div class="nav-item" onclick="switchAdminTab('batches',this)">📁 ব্যাচ</div>
+      <div class="nav-item" onclick="switchAdminTab('builder',this)">🛠️ টেস্ট বিল্ডার</div>
+      <div class="nav-item" onclick="switchAdminTab('questions',this)">❓ প্রশ্ন ব্যাংক</div>
+      <div class="nav-item" onclick="switchAdminTab('results',this)">🏆 রেজাল্ট</div>
+      <div class="nav-item" onclick="switchAdminTab('students',this)">👥 স্টুডেন্টস</div>
+      <div class="nav-item" onclick="switchAdminTab('settings',this)">⚙️ সেটিং</div>
+      <hr class="div" style="margin:8px 16px">
+      <div class="nav-item danger" onclick="adminLogout()">🚪 লগআউট</div>
+    </div>
+    <div class="admin-content">
+
+      <div class="admin-page active" id="admin-dash">
+        <div class="card">
+          <div class="field" style="margin:0"><select id="dashAdminBatch" onchange="loadAdminDashboard()"><option value="">সব ব্যাচ</option></select></div>
+        </div>
+        <div class="section-title" style="color:var(--green)">🟢 চলমান পরীক্ষাসমূহ</div>
+        <div style="overflow-x:auto"><table><thead><tr><th>পরীক্ষা</th><th>ব্যাচ</th><th>অ্যাকশন</th></tr></thead><tbody id="adminActiveTestsBody"></tbody></table></div>
+        <div class="section-title" style="color:var(--red)">🔴 নিষ্ক্রিয় পরীক্ষাসমূহ</div>
+        <div style="overflow-x:auto"><table><thead><tr><th>পরীক্ষা</th><th>ব্যাচ</th><th>অ্যাকশন</th></tr></thead><tbody id="adminInactiveTestsBody"></tbody></table></div>
+        <div class="section-title" style="color:var(--blue)">📚 আর্কাইভড লাইব্রেরি</div>
+        <div style="overflow-x:auto"><table><thead><tr><th>পরীক্ষা</th><th>ব্যাচ</th><th>অ্যাকশন</th></tr></thead><tbody id="adminArchivedTestsBody"></tbody></table></div>
+      </div>
+
+      <div class="admin-page" id="admin-batches">
+        <div class="card">
+          <div class="card-header">➕ নতুন ব্যাচ</div>
+          <div class="form-row">
+            <div class="field"><label>ব্যাচের নাম</label><input type="text" id="newBatchName" placeholder="নাম"></div>
+            <div class="field"><label>পাসওয়ার্ড</label><input type="text" id="newBatchPass" placeholder="পাসওয়ার্ড"></div>
+          </div>
+          <button class="btn btn-primary btn-small" style="width:auto" onclick="createBatch()">✅ ব্যাচ যোগ করুন</button>
+        </div>
+        <div id="adminBatchList"></div>
+      </div>
+
+      <div class="admin-page" id="admin-batch-edit">
+        <button class="btn btn-outline btn-small" style="margin-bottom:14px" onclick="switchAdminTab('batches',document.querySelector('.sidebar .nav-item:nth-child(2)'))">← ব্যাচ তালিকায় ফিরুন</button>
+        <div class="card" style="background:linear-gradient(135deg,var(--green),var(--green-lt));color:#fff;margin-bottom:18px">
+          <h2 id="editBatchTitle" style="font-size:1.1em">ব্যাচ এডিট</h2>
+        </div>
+        <div class="card">
+          <div class="card-header">📝 ব্যাচ তথ্য</div>
+          <div class="field"><label>ব্যাচের নাম</label><input type="text" id="editBatchName"></div>
+          <div class="field"><label>লগইন পাসওয়ার্ড</label><input type="text" id="editBatchPassword"></div>
+          <div class="field"><label>শিট পাসওয়ার্ড (অপশনাল)</label><input type="text" id="editSheetPassword" placeholder="না থাকলে ফাঁকা রাখুন"></div>
+          <button class="btn btn-primary" onclick="saveBatchInfo()">💾 তথ্য সংরক্ষণ</button>
+        </div>
+        <div class="card">
+          <div class="card-header">📢 নোটিশ ও লিংক</div>
+          <div class="field"><label>নোটিশ / ঘোষণা টেক্সট</label><textarea id="editNotice" rows="4" placeholder="শিক্ষার্থীদের জন্য ঘোষণা, নোটিশ, বা যেকোনো তথ্য..."></textarea></div>
+          <div class="field"><label>📎 নোটিশ লিংক</label><input type="text" id="editNoticeLink" placeholder="https://drive.google.com/... বা অন্য লিংক"></div>
+          <p class="help-text">লিংক দিলে নোটিশ কার্ডে একটি বাটন দেখাবে।</p>
+          <button class="btn btn-gold" onclick="saveNotice()">💾 নোটিশ সংরক্ষণ</button>
+        </div>
+        <div class="card">
+          <div class="card-header">📅 ক্লাস রুটিন</div>
+          <div id="routineFileInfo" style="display:none;margin-bottom:10px;padding:10px;background:var(--green-pale);border-radius:8px;font-size:.85em">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:var(--green)">✅ আপলোডকৃত ফাইল আছে</span>
+              <button class="btn btn-small btn-danger" onclick="deleteUploadedFile('routine')">🗑 মুছুন</button>
+            </div>
+          </div>
+          <div class="field"><label>Google Drive / যেকোনো লিংক</label><input type="text" id="editRoutineLink" placeholder="https://drive.google.com/..."></div>
+          <p class="help-text" style="margin-bottom:8px">অথবা সরাসরি ফাইল আপলোড করুন (PDF/ছবি):</p>
+          <div class="field"><input type="file" id="routineFile" accept=".pdf,.jpg,.jpeg,.png"></div>
+          <button class="btn btn-outline" onclick="saveRoutineLink()">🔗 রুটিন সংরক্ষণ</button>
+        </div>
+        <div class="card">
+          <div class="card-header">📂 লেকচার শিট</div>
+          <div id="sheetFileInfo" style="display:none;margin-bottom:10px;padding:10px;background:var(--green-pale);border-radius:8px;font-size:.85em">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:var(--green)">✅ আপলোডকৃত ফাইল আছে</span>
+              <button class="btn btn-small btn-danger" onclick="deleteUploadedFile('sheet')">🗑 মুছুন</button>
+            </div>
+          </div>
+          <div class="field"><label>Google Drive / যেকোনো লিংক</label><input type="text" id="editSheetLink" placeholder="https://drive.google.com/..."></div>
+          <p class="help-text" style="margin-bottom:8px">অথবা সরাসরি ফাইল আপলোড করুন (PDF/ছবি):</p>
+          <div class="field"><input type="file" id="sheetFile" accept=".pdf,.jpg,.jpeg,.png"></div>
+          <button class="btn btn-outline" onclick="saveSheetLink()">🔗 শিট সংরক্ষণ</button>
+        </div>
+        <div class="card">
+          <div class="card-header">📹 ভিডিও ক্লাস</div>
+          <div class="field"><label>YouTube / Google Drive লিংক</label><input type="text" id="editVideoLink" placeholder="https://youtube.com/... বা https://drive.google.com/..."></div>
+          <button class="btn btn-video" onclick="saveVideoLink()">💾 ভিডিও লিংক সংরক্ষণ</button>
+        </div>
+      </div>
+
+      <div class="admin-page" id="admin-builder">
+        <div class="card">
+          <div class="card-header">১. টেস্ট সেটআপ</div>
+          <div class="field"><label>পরীক্ষার নাম</label><input type="text" id="bTestName" placeholder="যেমন: ৫ম সাপ্তাহিক পরীক্ষা"></div>
+          <div class="field"><label>ব্যাচ নির্বাচন</label><select id="bBatchSelect"></select></div>
+          <div class="form-row">
+            <div class="field"><label>সময় (মিনিট)</label><input type="number" id="bDuration" value="25" min="5"></div>
+            <div class="field"><label>পূর্ণমান</label><input type="number" id="bTotalMarks" value="30" min="1"></div>
+          </div>
+          <div class="field"><label>নেগেটিভ মার্ক (প্রতি ভুলে)</label><input type="number" id="bNegMark" value="0.25" step="0.25" min="0"></div>
+          <button class="btn btn-primary" onclick="saveTest()">✅ টেস্ট সেভ করুন</button>
+        </div>
+        <div class="card">
+          <div class="card-header">২. প্রশ্ন ব্যাংক থেকে সিলেক্ট করুন</div>
+          <div class="form-row">
+            <div class="field"><label>সার্চ</label><input type="text" id="builderSearch" placeholder="প্রশ্ন খুঁজুন..." oninput="loadBuilder()"></div>
+            <div class="field"><label>নির্বাচিত প্রশ্ন</label><input type="text" id="builderCount" disabled value="0"></div>
+          </div>
+          <div class="form-row">
+            <div>
+              <div class="section-title">উপলব্ধ প্রশ্ন</div>
+              <div id="builderAvailable" style="max-height:320px;overflow:auto;border:1px solid var(--border);border-radius:10px;padding:10px;background:#fff"></div>
+            </div>
+            <div>
+              <div class="section-title">নির্বাচিত প্রশ্ন</div>
+              <div id="builderSelected" style="max-height:320px;overflow:auto;border:1px solid var(--border);border-radius:10px;padding:10px;background:#fff"></div>
+            </div>
+          </div>
+          <button class="btn btn-gold" style="margin-top:12px" onclick="loadBuilder()">🔄 রিফ্রেশ প্রশ্ন</button>
+        </div>
+      </div>
+
+      <div class="admin-page" id="admin-questions">
+        <div class="card">
+          <div class="card-header">❓ প্রশ্ন ব্যাংক</div>
+          <div class="form-row">
+            <div class="field"><label>সার্চ</label><input type="text" id="qSearch" placeholder="প্রশ্ন / অপশন / উত্তর খুঁজুন" oninput="loadQuestions()"></div>
+            <div class="field"><label>CSV ফাইল</label><input type="file" id="qbCsvFile" accept=".csv"></div>
+          </div>
+          <button class="btn btn-primary" onclick="uploadCSV('qbCsvFile')">⬆ CSV আপলোড</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>#</th><th>প্রশ্ন</th><th>সঠিক উত্তর</th><th>অ্যাকশন</th></tr></thead>
+            <tbody id="adminQBody"><tr><td colspan="4" class="empty-msg">লোড হচ্ছে...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="admin-page" id="admin-results">
+        <div class="card">
+          <div class="form-row">
+            <div class="field"><label>ব্যাচ</label><select id="resAdminBatch" onchange="loadAdminTestsForResult()"><option value="">নির্বাচন করুন</option></select></div>
+            <div class="field"><label>টেস্ট</label><select id="resAdminTest" onchange="loadAdminResults()"><option value="">নির্বাচন করুন</option></select></div>
+          </div>
+          <button class="btn btn-gold" onclick="printResultPDF()">⬇ PDF ডাউনলোড করুন (মাস্কড)</button>
+        </div>
+        <div id="adminResultDisplay" style="display:none">
+          <div class="card">
+            <div style="text-align:center;border-bottom:2px solid var(--green);padding-bottom:14px;margin-bottom:14px">
+              <h2 id="adminResTitle" style="color:var(--green)">ফলাফল শিট</h2>
+              <p id="adminResSubTitle" style="font-size:.88em;color:var(--gray-mid)"></p>
+            </div>
+            <div style="overflow-x:auto">
+              <table><thead><tr><th>র‍্যাঙ্ক</th><th>নাম</th><th>মোবাইল</th><th>স্কোর</th></tr></thead><tbody id="adminResBody"></tbody></table>
+            </div>
+            <p style="font-size:.73em;color:var(--gray-mid);margin-top:8px;text-align:center">* অ্যাডমিন ভিউ — পূর্ণ তথ্য প্রদর্শিত</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-page" id="admin-students">
+        <div class="card">
+          <div class="form-row">
+            <div class="field"><label>ব্যাচ ফিল্টার</label><select id="stuFilterBatch" onchange="loadAdminStudents()"><option value="">সব ব্যাচ</option></select></div>
+            <div class="field"><label>খুঁজুন</label><input type="text" id="stuSearch" placeholder="নাম বা নম্বর..." oninput="filterStudents()"></div>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>#</th><th>নাম</th><th>মোবাইল</th><th>ব্যাচ</th></tr></thead>
+            <tbody id="adminStBody"><tr><td colspan="4" class="empty-msg">লোড হচ্ছে...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="admin-page" id="admin-settings">
+        <div class="card">
+          <div class="card-header">🔑 অ্যাডমিন পাসওয়ার্ড পরিবর্তন</div>
+          <div class="field"><label>বর্তমান পাসওয়ার্ড</label>
+            <div class="pass-wrap"><input type="password" id="curPass" placeholder="বর্তমান পাসওয়ার্ড">
+            <button class="pass-eye" type="button" onclick="pwToggle('curPass',this)">👁</button></div>
+          </div>
+          <div class="field"><label>নতুন পাসওয়ার্ড</label>
+            <div class="pass-wrap"><input type="password" id="newPass" placeholder="কমপক্ষে ৬ অক্ষর">
+            <button class="pass-eye" type="button" onclick="pwToggle('newPass',this)">👁</button></div>
+          </div>
+          <div class="field"><label>নতুন পাসওয়ার্ড নিশ্চিত করুন</label>
+            <div class="pass-wrap"><input type="password" id="confPass" placeholder="আবার লিখুন">
+            <button class="pass-eye" type="button" onclick="pwToggle('confPass',this)">👁</button></div>
+          </div>
+          <button class="btn btn-primary" onclick="changeAdminPass()">🔒 পাসওয়ার্ড পরিবর্তন করুন</button>
+        </div>
+        <div class="card">
+          <div class="card-header">📲 অ্যাপ ডাউনলোড লিংক</div>
+          <p style="font-size:.83em;color:var(--gray-mid);margin-bottom:10px">এখানে সংরক্ষিত লিংক ভবিষ্যতের index.html / splash-এ ব্যবহার করা যাবে।</p>
+          <div class="field"><label>অ্যাপ ডাউনলোড লিংক</label><input type="text" id="appDownloadLink" placeholder="https://drive.google.com/..."></div>
+          <button class="btn btn-primary" onclick="saveAppDownloadLink()">💾 লিংক সংরক্ষণ করুন</button>
+        </div>
+        <div class="card">
+          <div class="card-header">📊 সিস্টেম তথ্য</div>
+          <div id="sysInfo"><div class="empty-msg">লোড হচ্ছে...</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DB_URL = 'https://vzctytzhcjlcrtpljpxo.supabase.co/rest/v1/';
+const DB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6Y3R5dHpoY2psY3J0cGxqcHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1Nzc4NzksImV4cCI6MjA5MzE1Mzg3OX0.B8jKTJDXwEpyST9-J5ct_-GIp27Z2-yLjMENdAysdXQ';
+const ST_URL = 'https://vzctytzhcjlcrtpljpxo.supabase.co/storage/v1/';
+const _k = atob('Z3lhbmFuZ29uMjAyNQ==');
+
+let globalBatches = [];
+let allStudents = [];
+let currentEditBatchId = null;
+let builderQuestionPool = [];
+let builderPickedQuestions = [];
+let builderTestId = null;
+let builderQuestionCount = 0;
+let lastResultData = { title:'', subtitle:'', rows:[] };
+
+async function api(endpoint, method='GET', body=null){
+  const opts = { method, headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY, 'Content-Type': 'application/json' } };
+  if(method === 'POST' || method === 'PATCH') opts.headers['Prefer'] = 'return=representation';
+  if(body !== null && body !== undefined) opts.body = JSON.stringify(body);
+  const res = await fetch(DB_URL + endpoint, opts);
+  const txt = await res.text();
+  if(!res.ok) throw new Error(`API ${res.status}: ${txt}`);
+  return txt ? JSON.parse(txt) : [];
+}
+
+async function uploadFile(file, folder='uploads'){
+  const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+  const fname = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2,7)}.${ext}`;
+  const res = await fetch(`${ST_URL}object/materials/${fname}`, {
+    method: 'POST',
+    headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY, 'Content-Type': file.type || 'application/octet-stream' },
+    body: file
+  });
+  if(!res.ok){
+    throw new Error(`ফাইল আপলোড ব্যর্থ। Supabase Storage "materials" বাকেট চেক করুন। (${res.status})`);
+  }
+  return `${ST_URL}object/public/materials/${fname}`;
+}
+
+async function deleteStorageFile(url){
+  const marker = 'object/public/materials/';
+  const idx = (url || '').indexOf(marker);
+  if(idx < 0) return;
+  const path = url.substring(idx + marker.length);
+  await fetch(`${ST_URL}object/materials/${path}`, {
+    method: 'DELETE',
+    headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY }
+  });
+}
+
+function ensureUrl(url){
+  if(!url || !url.trim()) return '';
+  url = url.trim();
+  return /^https?:\/\//i.test(url) ? url : 'https://' + url;
+}
+
+function maskPhone(p){
+  if(!p || p.length < 6) return p || '';
+  return p.substring(0, 4) + '*****' + p.substring(p.length - 2);
+}
+
+function pwToggle(inputId, btn){
+  const inp = document.getElementById(inputId);
+  if(!inp) return;
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.textContent = show ? '🙈' : '👁';
+}
+
+function showToast(msg, type='success'){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  clearTimeout(showToast._tm);
+  showToast._tm = setTimeout(() => t.className = 'toast', 3200);
+}
+
+function parseCSV(text){
+  const rows = text.replace(/\r/g,'').split('\n').filter(l => l.trim());
+  if(rows.length < 2) return [];
+  function splitLine(line){
+    const r=[]; let cur='', inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c === '"') inQ = !inQ;
+      else if(c === ',' && !inQ){ r.push(cur.trim().replace(/^"|"$/g,'')); cur=''; }
+      else cur += c;
+    }
+    r.push(cur.trim().replace(/^"|"$/g,''));
+    return r;
+  }
+  const headers = splitLine(rows[0]).map(h => h.toLowerCase());
+  const idx = n => headers.indexOf(n);
+  const [qI,aI,bI,cI,dI,corI,expI] = ['question_ar','opt_a','opt_b','opt_c','opt_d','correct','explanation_bn'].map(idx);
+  return rows.slice(1).map(r => {
+    const c = splitLine(r);
+    if(!c[qI] || !c[qI].trim()) return null;
+    return {
+      question_ar: c[qI] || '',
+      opt_a: c[aI] || '',
+      opt_b: c[bI] || '',
+      opt_c: c[cI] || '',
+      opt_d: c[dI] || '',
+      correct: (c[corI] || 'a').trim().toLowerCase(),
+      explanation_bn: expI >= 0 ? (c[expI] || '') : ''
+    };
+  }).filter(Boolean);
+}
+
+function printInPopup(htmlContent, title='জ্ঞানাঙ্গন'){
+  const popup = window.open('', '_blank', 'width=900,height=700,scrollbars=yes');
+  if(!popup){
+    showToast('পপআপ ব্লক হয়েছে। ব্রাউজার পপআপ অনুমতি দিন।', 'error');
+    return;
+  }
+  popup.document.write(`<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<title>${title}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;600;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Noto Serif Bengali',serif; background:#fff; color:#111; padding:20px 30px; direction:rtl; }
+  .print-header { text-align:center; border-bottom:2px solid #1a6b3c; padding-bottom:14px; margin-bottom:20px; direction:ltr; }
+  .print-header h1 { font-size:20px; color:#1a6b3c; }
+  .print-header h2 { font-size:16px; margin:6px 0; color:#333; }
+  .print-header .meta { display:flex; justify-content:space-between; padding:0 10px; font-size:12px; color:#555; margin-top:6px; direction:ltr; }
+  .pq-card { border:1px solid #ddd; border-radius:10px; padding:12px 14px; margin-bottom:12px; }
+  .pq-opts { margin-top:8px; display:grid; gap:6px; font-size:13px; }
+  table { width:100%; border-collapse:collapse; margin-top:16px; }
+  th,td { border:1px solid #ccc; padding:8px 10px; text-align:left; }
+  th { background:#f6f6f6; }
+  .footer-note { margin-top:16px; font-size:11px; color:#666; text-align:center; }
+</style>
+</head>
+<body>
+${htmlContent}
+<script>window.onload=()=>setTimeout(()=>window.print(),200);</script>
+</body>
+</html>`);
+  popup.document.close();
+}
+
+async function generateQuestionPDF(id){
+  try{
+    showToast('📄 প্রশ্নপত্র তৈরি হচ্ছে...', 'info');
+    const tData = await api(`tests?id=eq.${id}`);
+    const test = tData[0];
+    if(!test) return showToast('টেস্ট পাওয়া যায়নি', 'error');
+    const links = await api(`test_questions?test_id=eq.${id}`);
+    if(!links.length) return showToast('প্রশ্ন নেই', 'error');
+    const qIds = links.map(l => l.question_id).join(',');
+    const questions = await api(`questions?id=in.(${qIds})`);
+    let questionsHtml = '';
+    questions.forEach((q, i) => {
+      questionsHtml += `<div class="pq-card">
+        <b>${i+1}. ${q.question_ar || ''}</b>
+        <div class="pq-opts">
+          <div>أ) ${q.opt_a || ''}</div>
+          <div>ب) ${q.opt_b || ''}</div>
+          <div>ج) ${q.opt_c || ''}</div>
+          <div>د) ${q.opt_d || ''}</div>
+        </div>
+      </div>`;
+    });
+    const html = `
+      <div class="print-header" style="direction:ltr">
+        <h1>জ্ঞানাঙ্গন (Gyanangon)</h1>
+        <p style="font-size:12px;color:#555">শিক্ষক নিবন্ধন প্রস্তুতি</p>
+        <h2>বিষয়: ${test.name || ''}</h2>
+        <div class="meta">
+          <span>সময়: ${test.duration_minutes || ''} মিনিট</span>
+          <span>পূর্ণমান: ${test.total_marks || ''}</span>
+          <span>নেগেটিভ: ${test.negative_mark || ''}</span>
+        </div>
+      </div>
+      <div>${questionsHtml}</div>
+      <p class="footer-note">* জ্ঞানাঙ্গন — শিক্ষক নিবন্ধন প্রস্তুতি</p>`;
+    printInPopup(html, `প্রশ্নপত্র — ${test.name || ''}`);
+  }catch(e){
+    showToast('❌ ব্যর্থ: ' + e.message, 'error');
+  }
+}
+
+function printResultPDF(){
+  if(!lastResultData.rows.length) return showToast('আগে রেজাল্ট লোড করুন', 'error');
+  const {title, subtitle, rows} = lastResultData;
+  const tableRows = rows.map((a, i) => `<tr>
+    <td>${i < 3 ? ['🥇','🥈','🥉'][i] : i + 1}</td>
+    <td>${a.students?.name || '—'}</td>
+    <td style="font-family:monospace">${maskPhone(a.students?.phone || '')}</td>
+    <td><b>${a.score}</b></td>
+  </tr>`).join('');
+  const html = `
+    <div class="print-header" style="direction:ltr">
+      <h1>জ্ঞানাঙ্গন (Gyanangon)</h1>
+      <p style="font-size:12px;color:#555">শিক্ষক নিবন্ধন প্রস্তুতি</p>
+      <h2>${title}</h2>
+      <p class="res-sub">${subtitle}</p>
+    </div>
+    <table>
+      <thead><tr><th>র‍্যাঙ্ক</th><th>নাম</th><th>মোবাইল</th><th>স্কোর</th></tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table>
+    <p class="footer-note">* মোবাইল নম্বর আংশিকভাবে গোপন করা হয়েছে | জ্ঞানাঙ্গন — শিক্ষক নিবন্ধন প্রস্তুতি</p>`;
+  printInPopup(html, `ফলাফল — ${title}`);
+}
+
+function saveAdmin(){ sessionStorage.setItem('gya_adm', '1'); syncHeader(); }
+function clearAdmin(){ sessionStorage.removeItem('gya_adm'); syncHeader(); }
+function isAdmin(){ return sessionStorage.getItem('gya_adm') === '1'; }
+
+function syncHeader(){
+  const btn = document.getElementById('adminLogoutBtn');
+  if(btn) btn.style.display = isAdmin() ? 'inline-block' : 'none';
+}
+
+function goTo(sid){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(sid);
+  if(el) el.classList.add('active');
+  syncHeader();
+}
+
+function switchAdminTab(t, el){
+  document.querySelectorAll('.admin-page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar .nav-item').forEach(n => n.classList.remove('active'));
+  const pg = document.getElementById('admin-' + t);
+  if(pg) pg.classList.add('active');
+  if(el) el.classList.add('active');
+  if(t === 'dash') loadAdminDashboard();
+  if(t === 'batches') loadAdminBatches();
+  if(t === 'builder') loadBuilder();
+  if(t === 'questions') loadQuestions();
+  if(t === 'students') loadAdminStudents();
+  if(t === 'settings') loadAdminSettings();
+  if(t === 'results') refreshGlobalBatches();
+}
+
+async function adminLogin(){
+  const pass = document.getElementById('adminPass').value.trim();
+  if(!pass) return showToast('পাসওয়ার্ড দিন', 'error');
+  try{
+    const s = await api('settings?id=eq.1');
+    const stored = (s && s.length) ? (s[0].admin_pass || '') : '';
+    if((stored && pass === stored) || (!stored && pass === _k)) doAdminEntry();
+    else showToast('❌ ভুল পাসওয়ার্ড', 'error');
+  }catch(_){
+    if(pass === _k) doAdminEntry();
+    else showToast('❌ ভুল পাসওয়ার্ড', 'error');
+  }
+}
+
+function doAdminEntry(){
+  saveAdmin();
+  document.getElementById('adminPass').value = '';
+  goTo('screenAdminPanel');
+  switchAdminTab('dash', document.querySelector('.sidebar .nav-item'));
+}
+
+function adminLogout(){
+  clearAdmin();
+  goTo('screenAdminLogin');
+  showToast('লগআউট হয়েছে', 'info');
+}
+
+async function seedDefaultBatches(){
+  try{
+    let ex = await api('batches?order=id.desc');
+    const rMap = {
+      'সহকারী মৌলবি সাবজেক্টিভ':'সহকারী মৌলবি subjective',
+      'আরবি প্রভাষক সাবজেক্টিভ':'আরবি প্রভাষক subjective',
+      'ইবতেদায়ী মৌলবি Exam Batch':'ইবতেদায়ী মৌলবি Exam',
+      'সহকারী মৌলবি Exam Batch':'সহকারী মৌলবি exam',
+      'আরবি প্রভাষক Exam Batch':'আরবি প্রভাষক exam',
+      'ফ্রি - ডেমো':'ফ্রি'
+    };
+    for(const b of ex) if(rMap[b.name]) await api(`batches?id=eq.${b.id}`, 'PATCH', { name: rMap[b.name] });
+    const desired = ['ফ্রি','আরবি প্রভাষক exam','আরবি প্রভাষক subjective','সহকারী মৌলবি exam','সহকারী মৌলবি subjective','ইবতেদায়ী মৌলবি Exam','ইবতেদায়ী মৌলবি Subjective'];
+    ex = await api('batches?order=id.desc');
+    const names = ex.map(b => b.name);
+    for(const n of desired) if(!names.includes(n)) await api('batches', 'POST', { name:n, password:'1234' });
+  }catch(_){ }
+}
+
+async function seedSettings(){
+  try{
+    const s = await api('settings?id=eq.1');
+    if(!s || !s.length) await api('settings', 'POST', { id:1, admin_pass:_k });
+  }catch(_){ }
+}
+
+async function refreshGlobalBatches(){
+  globalBatches = await api('batches?order=id.desc');
+  ['dashAdminBatch','bBatchSelect','resAdminBatch','stuFilterBatch'].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    const val = el.value;
+    const pfx = id === 'dashAdminBatch' || id === 'stuFilterBatch' ? '<option value="">সব ব্যাচ</option>' : '<option value="">নির্বাচন করুন</option>';
+    el.innerHTML = pfx + globalBatches.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+    if(val) el.value = val;
+  });
+}
+
+async function loadAdminDashboard(){
+  await refreshGlobalBatches();
+  const bId = document.getElementById('dashAdminBatch').value;
+  const f = bId ? `batch_id=eq.${bId}&` : '';
+  const tests = await api(`tests?${f}order=id.desc&select=*,batches(name)`);
+  let aH = '', iH = '', arcH = '';
+  tests.forEach(t => {
+    const row = `<tr>
+      <td><b>${t.name}</b></td><td>${t.batches?.name || '—'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-small btn-primary" onclick="generateQuestionPDF(${t.id})">📄 প্রশ্ন</button>
+        <button class="btn btn-small btn-gold" onclick="toggleField(${t.id},'is_archived',${!t.is_archived})">${t.is_archived ? '↩ আন-আর্কাইভ' : '📦 আর্কাইভ'}</button>
+        <button class="btn btn-small btn-outline" onclick="toggleField(${t.id},'is_active',${!t.is_active})">${t.is_active ? '⏸ বন্ধ' : '▶ চালু'}</button>
+        <button class="btn btn-small" style="background:var(--blue);color:#fff" onclick="toggleField(${t.id},'result_published',${!t.result_published})">${t.result_published ? '🙈 গোপন' : '📢 প্রকাশ'}</button>
+        <button class="btn btn-small btn-danger" onclick="deleteTest(${t.id})">🗑</button>
+      </td>
+    </tr>`;
+    if(t.is_archived) arcH += row; else if(t.is_active) aH += row; else iH += row;
+  });
+  const e = m => `<tr><td colspan="3" class="empty-msg">${m}</td></tr>`;
+  document.getElementById('adminActiveTestsBody').innerHTML = aH || e('কোনো চলমান পরীক্ষা নেই');
+  document.getElementById('adminInactiveTestsBody').innerHTML = iH || e('কোনো নিষ্ক্রিয় পরীক্ষা নেই');
+  document.getElementById('adminArchivedTestsBody').innerHTML = arcH || e('কোনো আর্কাইভ নেই');
+}
+
+async function toggleField(id, f, v){
+  await api(`tests?id=eq.${id}`, 'PATCH', { [f]:v });
+  showToast('✅ আপডেট হয়েছে');
+  loadAdminDashboard();
+}
+
+async function deleteTest(id){
+  if(!confirm('নিশ্চিতভাবে মুছবেন?')) return;
+  await api(`test_questions?test_id=eq.${id}`, 'DELETE');
+  await api(`attempts?test_id=eq.${id}`, 'DELETE');
+  await api(`tests?id=eq.${id}`, 'DELETE');
+  showToast('✅ পরীক্ষা মুছে ফেলা হয়েছে');
+  loadAdminDashboard();
+}
+
+async function createBatch(){
+  const n = document.getElementById('newBatchName').value.trim();
+  const p = document.getElementById('newBatchPass').value.trim();
+  if(!n || !p) return showToast('নাম ও পাসওয়ার্ড দিন', 'error');
+  await api('batches', 'POST', { name:n, password:p });
+  document.getElementById('newBatchName').value = '';
+  document.getElementById('newBatchPass').value = '';
+  showToast('✅ নতুন ব্যাচ তৈরি হয়েছে');
+  await refreshGlobalBatches();
+  loadAdminBatches();
+}
+
+async function loadAdminBatches(){
+  await refreshGlobalBatches();
+  document.getElementById('adminBatchList').innerHTML = globalBatches.map(b =>
+    `<div class="list-item">
+      <div style="flex:1" onclick="openBatchEditor(${b.id})">
+        <strong>${b.name}</strong>
+        <br><small style="color:var(--gray-mid)">পাস: ${b.password} | শিট পাস: ${b.sheet_password || 'নেই'} | রুটিন:${b.routine_link ? '✅' : '❌'} শিট:${b.sheet_link ? '✅' : '❌'} ভিডিও:${b.video_link ? '✅' : '❌'}</small>
+      </div>
+      <button class="btn btn-small btn-danger" onclick="event.stopPropagation();deleteBatch(${b.id})">🗑</button>
+    </div>`).join('') || '<div class="empty-msg">কোনো ব্যাচ নেই</div>';
+}
+
+async function openBatchEditor(batchId){
+  await refreshGlobalBatches();
+  const b = globalBatches.find(x => x.id == batchId);
+  if(!b) return showToast('ব্যাচ পাওয়া যায়নি', 'error');
+  currentEditBatchId = batchId;
+  document.getElementById('editBatchTitle').textContent = '✏️ ' + b.name;
+  document.getElementById('editBatchName').value = b.name || '';
+  document.getElementById('editBatchPassword').value = b.password || '';
+  document.getElementById('editSheetPassword').value = b.sheet_password || '';
+  document.getElementById('editVideoLink').value = b.video_link || '';
+  document.getElementById('editRoutineLink').value = b.routine_link || '';
+  document.getElementById('editSheetLink').value = b.sheet_link || '';
+  document.getElementById('editNotice').value = b.notice || '';
+  document.getElementById('editNoticeLink').value = b.notice_link || '';
+  document.getElementById('routineFileInfo').style.display = (b.routine_link && b.routine_link.includes('/object/public/materials/')) ? 'block' : 'none';
+  document.getElementById('sheetFileInfo').style.display = (b.sheet_link && b.sheet_link.includes('/object/public/materials/')) ? 'block' : 'none';
+  document.querySelectorAll('.admin-page').forEach(p => p.classList.remove('active'));
+  document.getElementById('admin-batch-edit').classList.add('active');
+}
+
+async function saveBatchInfo(){
+  if(!currentEditBatchId) return showToast('ব্যাচ সিলেক্ট হয়নি', 'error');
+  const name = document.getElementById('editBatchName').value.trim();
+  const password = document.getElementById('editBatchPassword').value.trim();
+  const sheet_password = document.getElementById('editSheetPassword').value.trim();
+  if(!name || !password) return showToast('নাম ও পাসওয়ার্ড আবশ্যক', 'error');
+  try{
+    await api(`batches?id=eq.${currentEditBatchId}`, 'PATCH', { name, password, sheet_password });
+    document.getElementById('editBatchTitle').textContent = '✏️ ' + name;
+    showToast('✅ তথ্য সংরক্ষিত');
+    await refreshGlobalBatches();
+  }catch(e){ showToast('❌ ব্যর্থ', 'error'); }
+}
+
+async function saveNotice(){
+  if(!currentEditBatchId) return;
+  const notice = document.getElementById('editNotice').value.trim();
+  const nl = ensureUrl(document.getElementById('editNoticeLink').value.trim());
+  try{ await api(`batches?id=eq.${currentEditBatchId}`, 'PATCH', { notice, notice_link:nl }); showToast('✅ নোটিশ সংরক্ষিত'); await refreshGlobalBatches(); }
+  catch(e){ showToast('❌ ব্যর্থ', 'error'); }
+}
+
+async function saveRoutineLink(){
+  if(!currentEditBatchId) return;
+  let link = ensureUrl(document.getElementById('editRoutineLink').value.trim());
+  const fi = document.getElementById('routineFile');
+  if(fi.files[0]){
+    try{ showToast('📤 আপলোড হচ্ছে...', 'info'); link = await uploadFile(fi.files[0], 'routine'); document.getElementById('editRoutineLink').value = link; }
+    catch(e){ return showToast('❌ ' + e.message, 'error'); }
+  }
+  try{ await api(`batches?id=eq.${currentEditBatchId}`, 'PATCH', { routine_link:link }); showToast('✅ রুটিন সংরক্ষিত'); await refreshGlobalBatches(); }
+  catch(e){ showToast('❌ ব্যর্থ', 'error'); }
+}
+
+async function saveSheetLink(){
+  if(!currentEditBatchId) return;
+  let link = ensureUrl(document.getElementById('editSheetLink').value.trim());
+  const fi = document.getElementById('sheetFile');
+  if(fi.files[0]){
+    try{ showToast('📤 আপলোড হচ্ছে...', 'info'); link = await uploadFile(fi.files[0], 'sheets'); document.getElementById('editSheetLink').value = link; }
+    catch(e){ return showToast('❌ ' + e.message, 'error'); }
+  }
+  try{ await api(`batches?id=eq.${currentEditBatchId}`, 'PATCH', { sheet_link:link }); showToast('✅ শিট সংরক্ষিত'); await refreshGlobalBatches(); }
+  catch(e){ showToast('❌ ব্যর্থ', 'error'); }
+}
+
+async function saveVideoLink(){
+  if(!currentEditBatchId) return;
+  const vl = ensureUrl(document.getElementById('editVideoLink').value.trim());
+  try{ await api(`batches?id=eq.${currentEditBatchId}`, 'PATCH', { video_link:vl }); showToast('✅ ভিডিও লিংক সংরক্ষিত'); await refreshGlobalBatches(); }
+  catch(e){ showToast('❌ ব্যর্থ', 'error'); }
+}
+
+async function deleteUploadedFile(type){
+  if(!currentEditBatchId) return;
+  const field = type === 'routine' ? 'routine_link' : 'sheet_link';
+  const b = globalBatches.find(x => x.id == currentEditBatchId);
+  if(!b || !b[field]) return;
+  if(!confirm('আপলোডকৃত ফাইলটি মুছবেন?')) return;
+  try{
+    await deleteStorageFile(b[field]);
+    await api(`batches?id=eq.${currentEditBatchId}`, 'PATCH', { [field]:'' });
+    document.getElementById(type === 'routine' ? 'editRoutineLink' : 'editSheetLink').value = '';
+    document.getElementById(type === 'routine' ? 'routineFileInfo' : 'sheetFileInfo').style.display = 'none';
+    showToast('✅ ফাইল মুছে ফেলা হয়েছে');
+    await refreshGlobalBatches();
+  }catch(e){ showToast('❌ মুছতে ব্যর্থ: ' + e.message, 'error'); }
+}
+
+async function deleteBatch(id){
+  const b = globalBatches.find(x => x.id == id);
+  if(!b || !confirm(`"${b.name}" ব্যাচ মুছবেন? সব ডেটা মুছে যাবে!`)) return;
+  try{
+    const students = await api(`students?batch_id=eq.${id}`);
+    for(const s of students) await api(`attempts?student_id=eq.${s.id}`, 'DELETE');
+    await api(`students?batch_id=eq.${id}`, 'DELETE');
+    const tests = await api(`tests?batch_id=eq.${id}`);
+    for(const t of tests){
+      await api(`test_questions?test_id=eq.${t.id}`, 'DELETE');
+      await api(`attempts?test_id=eq.${t.id}`, 'DELETE');
+    }
+    await api(`tests?batch_id=eq.${id}`, 'DELETE');
+    await api(`batches?id=eq.${id}`, 'DELETE');
+    showToast('✅ ব্যাচ মুছে ফেলা হয়েছে');
+    await refreshGlobalBatches();
+    loadAdminBatches();
+  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
+}
+
+function renderBuilder(){
+  const q = (document.getElementById('builderSearch').value || '').toLowerCase();
+  const poolHtml = builderQuestionPool.filter(x => !builderPickedQuestions.some(y => y.id === x.id))
+    .filter(x => !q || [x.question_ar, x.opt_a, x.opt_b, x.opt_c, x.opt_d].join(' ').toLowerCase().includes(q))
+    .map(x => `<div class="list-item" style="cursor:default;align-items:flex-start">
+      <div style="flex:1">
+        <strong>${x.question_ar || ''}</strong>
+        <br><small style="color:var(--gray-mid)">A) ${x.opt_a || ''} | B) ${x.opt_b || ''} | C) ${x.opt_c || ''} | D) ${x.opt_d || ''}</small>
+      </div>
+      <button class="btn btn-small btn-primary" onclick="addQToBuilder(${x.id})">➕</button>
+    </div>`).join('') || '<div class="empty-msg">কোনো প্রশ্ন নেই</div>';
+  const selHtml = builderPickedQuestions.map(x => `<div class="list-item list-item-arc" style="cursor:default;align-items:flex-start">
+      <div style="flex:1">
+        <strong>${x.question_ar || ''}</strong>
+        <br><small style="color:var(--gray-mid)">A) ${x.opt_a || ''} | B) ${x.opt_b || ''} | C) ${x.opt_c || ''} | D) ${x.opt_d || ''}</small>
+      </div>
+      <button class="btn btn-small btn-danger" onclick="removeQFromBuilder(${x.id})">➖</button>
+    </div>`).join('') || '<div class="empty-msg">এখনো কোনো প্রশ্ন নেই</div>';
+  document.getElementById('builderAvailable').innerHTML = poolHtml;
+  document.getElementById('builderSelected').innerHTML = selHtml;
+  document.getElementById('builderCount').value = String(builderPickedQuestions.length);
+}
+
+async function loadBuilder(){
+  builderQuestionPool = await api('questions?order=id.desc');
+  renderBuilder();
+}
+
+function addQToBuilder(id){
+  const q = builderQuestionPool.find(x => x.id == id);
+  if(!q) return;
+  if(builderPickedQuestions.some(x => x.id == id)) return;
+  builderPickedQuestions.push(q);
+  renderBuilder();
+}
+
+function removeQFromBuilder(id){
+  builderPickedQuestions = builderPickedQuestions.filter(x => x.id != id);
+  renderBuilder();
+}
+
+async function saveTest(){
+  const name = document.getElementById('bTestName').value.trim();
+  const bId = document.getElementById('bBatchSelect').value;
+  const dur = parseInt(document.getElementById('bDuration').value) || 25;
+  const marks = parseInt(document.getElementById('bTotalMarks').value) || 30;
+  const neg = parseFloat(document.getElementById('bNegMark').value) || 0.25;
+  if(!name || !bId) return showToast('নাম ও ব্যাচ নির্বাচন করুন', 'error');
+  if(!builderPickedQuestions.length) return showToast('কমপক্ষে ১টি প্রশ্ন সিলেক্ট করুন', 'error');
+  try{
+    const t = await api('tests', 'POST', { name, batch_id:parseInt(bId), duration_minutes:dur, total_marks:marks, negative_mark:neg });
+    builderTestId = t[0].id;
+    await api('test_questions', 'POST', builderPickedQuestions.map(q => ({ test_id:builderTestId, question_id:q.id })));
+    showToast('✅ টেস্ট সেভ হয়েছে');
+    builderQuestionCount = builderPickedQuestions.length;
+    builderPickedQuestions = [];
+    document.getElementById('bTestName').value = '';
+    renderBuilder();
+    loadAdminDashboard();
+  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
+}
+
+async function loadQuestions(){
+  const q = (document.getElementById('qSearch')?.value || '').toLowerCase();
+  const data = await api('questions?order=id.desc');
+  const rows = data.filter(x => !q || [x.question_ar, x.opt_a, x.opt_b, x.opt_c, x.opt_d, x.correct].join(' ').toLowerCase().includes(q));
+  document.getElementById('adminQBody').innerHTML = rows.length ? rows.map((x, i) => `<tr>
+    <td>${i + 1}</td>
+    <td style="max-width:540px">${x.question_ar || ''}<div class="help-text">A) ${x.opt_a || ''} | B) ${x.opt_b || ''} | C) ${x.opt_c || ''} | D) ${x.opt_d || ''}</div></td>
+    <td><span class="badge badge-b">${(x.correct || '').toUpperCase()}</span></td>
+    <td><button class="btn btn-small btn-danger" onclick="deleteQuestion(${x.id})">🗑</button></td>
+  </tr>`).join('') : '<tr><td colspan="4" class="empty-msg">কোনো প্রশ্ন নেই</td></tr>';
+  if(document.getElementById('builderAvailable')) builderQuestionPool = data;
+}
+
+async function deleteQuestion(id){
+  if(!confirm('প্রশ্নটি মুছবেন?')) return;
+  try{
+    await api(`test_questions?question_id=eq.${id}`, 'DELETE');
+    await api(`questions?id=eq.${id}`, 'DELETE');
+    showToast('✅ প্রশ্ন মুছে ফেলা হয়েছে');
+    loadQuestions();
+    loadBuilder();
+  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
+}
+
+function uploadCSV(inputId='qbCsvFile'){
+  const file = document.getElementById(inputId)?.files?.[0];
+  if(!file) return showToast('CSV ফাইল সিলেক্ট করুন', 'error');
+  const reader = new FileReader();
+  reader.onload = async(e) => {
+    const qs = parseCSV(e.target.result);
+    if(!qs.length) return showToast('CSV খালি বা ফরম্যাট ভুল', 'error');
+    try{
+      await api('questions', 'POST', qs);
+      showToast(`✅ ${qs.length}টি প্রশ্ন যোগ হয়েছে`);
+      document.getElementById(inputId).value = '';
+      loadQuestions();
+      loadBuilder();
+    }catch(err){ showToast('❌ আপলোড ব্যর্থ: ' + (err.message || 'অজানা'), 'error'); }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+async function loadAdminTestsForResult(){
+  const bId = document.getElementById('resAdminBatch').value;
+  document.getElementById('adminResultDisplay').style.display = 'none';
+  if(!bId) return;
+  const tests = await api(`tests?batch_id=eq.${bId}&order=id.desc`);
+  document.getElementById('resAdminTest').innerHTML = '<option value="">টেস্ট নির্বাচন করুন</option>' + tests.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+}
+
+async function loadAdminResults(){
+  const tid = document.getElementById('resAdminTest').value;
+  if(!tid) return;
+  const atts = await api(`attempts?test_id=eq.${tid}&is_practice=eq.false&order=score.desc&select=score,students(name,phone)`);
+  const test = await api(`tests?id=eq.${tid}`);
+  const title = test.length ? test[0].name : 'ফলাফল';
+  const subtitle = test.length ? `পূর্ণমান: ${test[0].total_marks} | মোট পরীক্ষার্থী: ${atts.length}` : '';
+  document.getElementById('adminResTitle').textContent = title;
+  document.getElementById('adminResSubTitle').textContent = subtitle;
+  lastResultData = { title, subtitle, rows: atts };
+  document.getElementById('adminResBody').innerHTML = atts.length ? atts.map((a,i) => `<tr>
+      <td>${i<3?['🥇','🥈','🥉'][i]:i+1}</td>
+      <td>${a.students?.name || '—'}</td>
+      <td style="font-family:monospace">${a.students?.phone || '—'}</td>
+      <td><b>${a.score}</b></td>
+    </tr>`).join('') : '<tr><td colspan="4" class="empty-msg">কোনো ফলাফল নেই</td></tr>';
+  document.getElementById('adminResultDisplay').style.display = 'block';
+}
+
+async function loadAdminStudents(){
+  const bId = document.getElementById('stuFilterBatch').value;
+  const f = bId ? `batch_id=eq.${bId}&` : '';
+  allStudents = await api(`students?${f}order=id.desc&select=*,batches(name)`);
+  renderStudentTable(allStudents);
+}
+
+function filterStudents(){
+  const q = document.getElementById('stuSearch').value.toLowerCase();
+  renderStudentTable(allStudents.filter(s => s.name?.toLowerCase().includes(q) || s.phone?.includes(q)));
+}
+
+function renderStudentTable(sts){
+  document.getElementById('adminStBody').innerHTML = sts.length ? sts.map((s,i) => `<tr>
+      <td>${i+1}</td><td>${s.name || ''}</td>
+      <td style="font-family:monospace">${s.phone || '—'}</td>
+      <td>${s.batches?.name || '—'}</td>
+    </tr>`).join('') : '<tr><td colspan="4" class="empty-msg">কোনো শিক্ষার্থী নেই</td></tr>';
+}
+
+async function loadAdminSettings(){
+  try{
+    const [batches, students, tests, settings] = await Promise.all([
+      Promise.resolve(globalBatches.length),
+      api('students?select=id'),
+      api('tests?select=id'),
+      api('settings?id=eq.1')
+    ]);
+    document.getElementById('sysInfo').innerHTML = `
+      <div style="display:grid;gap:8px">
+        <div class="modal-info-row"><span>📁 মোট ব্যাচ</span><b>${batches}</b></div>
+        <div class="modal-info-row"><span>👥 মোট শিক্ষার্থী</span><b>${students.length}</b></div>
+        <div class="modal-info-row"><span>📝 মোট পরীক্ষা</span><b>${tests.length}</b></div>
+      </div>`;
+    const appLink = settings && settings[0] ? (settings[0].app_download_link || '') : '';
+    document.getElementById('appDownloadLink').value = appLink;
+  }catch(e){
+    document.getElementById('sysInfo').textContent = 'তথ্য লোড করা যায়নি';
+  }
+}
+
+async function changeAdminPass(){
+  const cur = document.getElementById('curPass').value;
+  const nw = document.getElementById('newPass').value;
+  const cf = document.getElementById('confPass').value;
+  if(!cur || !nw || !cf) return showToast('সব ঘর পূরণ করুন', 'error');
+  if(nw.length < 6) return showToast('পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে', 'error');
+  if(nw !== cf) return showToast('দুটি পাসওয়ার্ড মিলছে না', 'error');
+  try{
+    const s = await api('settings?id=eq.1');
+    const stored = (s && s.length) ? (s[0].admin_pass || '') : _k;
+    if(cur !== stored) return showToast('বর্তমান পাসওয়ার্ড ভুল', 'error');
+    if(s && s.length) await api('settings?id=eq.1', 'PATCH', { admin_pass:nw });
+    else await api('settings', 'POST', { id:1, admin_pass:nw });
+    showToast('✅ পাসওয়ার্ড পরিবর্তন সফল');
+    document.getElementById('curPass').value = '';
+    document.getElementById('newPass').value = '';
+    document.getElementById('confPass').value = '';
+  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
+}
+
+async function saveAppDownloadLink(){
+  const link = document.getElementById('appDownloadLink').value.trim();
+  try{
+    const s = await api('settings?id=eq.1');
+    if(!s || !s.length) await api('settings', 'POST', { id:1, app_download_link:link });
+    else await api('settings?id=eq.1', 'PATCH', { app_download_link:link });
+    showToast('✅ অ্যাপ লিংক সংরক্ষিত');
+  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
+}
+
+window.onload = async () => {
+  try{
+    await seedDefaultBatches();
+    await seedSettings();
+    await refreshGlobalBatches();
+  }catch(_){ }
+  syncHeader();
+  if(isAdmin()){
+    goTo('screenAdminPanel');
+    switchAdminTab('dash', document.querySelector('.sidebar .nav-item'));
+  }else{
+    goTo('screenAdminLogin');
+  }
+  document.getElementById('logoBtn').onclick = () => {
+    if(isAdmin()) switchAdminTab('dash', document.querySelector('.sidebar .nav-item'));
+    else goTo('screenAdminLogin');
+  };
+};
+</script>
+</body>
+</html>
