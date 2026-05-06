@@ -894,8 +894,8 @@ async function checkAnnouncement(){
     const text = (s[0].announcement_text || '').trim();
     const id = (s[0].announcement_id || '').trim();
     if(!text || !id) return;
-    const seenId = localStorage.getItem('seen_announcement_id') || '';
-    if(seenId === id) return;
+    const seenAt = localStorage.getItem('ann_seen_' + id);
+    if(seenAt && (Date.now() - parseInt(seenAt)) < 86400000) return;
     const title = (s[0].announcement_title || '').trim() || 'ঘোষণা';
     document.getElementById('announceTitle').textContent = '📢 ' + title;
     document.getElementById('announceText').textContent = text;
@@ -906,7 +906,8 @@ async function checkAnnouncement(){
 
 function markAnnouncementRead(){
   const id = document.getElementById('announcePopup').dataset.currentId || '';
-  if(id) localStorage.setItem('seen_announcement_id', id);
+  if(id) localStorage.setItem('ann_seen_' + id, Date.now().toString());
+  localStorage.removeItem('seen_announcement_id');
   document.getElementById('announcePopup').style.display = 'none';
 }
 
