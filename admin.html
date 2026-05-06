@@ -117,9 +117,8 @@ tbody tr:hover td{background:var(--green-pale)}
 .modal-overlay.show{display:flex;animation:fadeIn .2s}
 .modal-box{background:#fff;border-radius:16px;padding:26px;max-width:420px;width:100%;box-shadow:var(--shadow-lg)}
 .modal-title{font-size:1.1em;font-weight:700;color:var(--green);margin-bottom:12px}
-.modal-info-row{display:flex;justify-content:space-between;padding:8px 12px;background:var(--green-pale);border-radius:8px;margin-bottom:7px;font-size:.88em;font-weight:600}
-.modal-actions{display:flex;gap:10px;margin-top:16px}
-.modal-actions .btn{flex:1}
+.modal-info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;font-size:.9em}
+.modal-actions{display:flex;gap:10px;margin-top:16px;justify-content:flex-end}.modal-actions .btn{width:auto;min-width:120px}
 
 /* TOAST */
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#2d3748;color:#fff;padding:10px 22px;border-radius:10px;z-index:1000;display:none;font-size:.9em;box-shadow:var(--shadow-lg);max-width:90vw;text-align:center;pointer-events:none}
@@ -674,25 +673,6 @@ function adminLogout(){
   showToast('লগআউট হয়েছে', 'info');
 }
 
-async function seedDefaultBatches(){
-  try{
-    let ex = await api('batches?order=id.desc');
-    const rMap = {
-      'সহকারী মৌলবি সাবজেক্টিভ':'সহকারী মৌলবি subjective',
-      'আরবি প্রভাষক সাবজেক্টিভ':'আরবি প্রভাষক subjective',
-      'ইবতেদায়ী মৌলবি Exam Batch':'ইবতেদায়ী মৌলবি Exam',
-      'সহকারী মৌলবি Exam Batch':'সহকারী মৌলবি exam',
-      'আরবি প্রভাষক Exam Batch':'আরবি প্রভাষক exam',
-      'ফ্রি - ডেমো':'ফ্রি'
-    };
-    for(const b of ex) if(rMap[b.name]) await api(`batches?id=eq.${b.id}`, 'PATCH', { name: rMap[b.name] });
-    const desired = ['ফ্রি','আরবি প্রভাষক exam','আরবি প্রভাষক subjective','সহকারী মৌলবি exam','সহকারী মৌলবি subjective','ইবতেদায়ী মৌলবি Exam','ইবতেদায়ী মৌলবি Subjective'];
-    ex = await api('batches?order=id.desc');
-    const names = ex.map(b => b.name);
-    for(const n of desired) if(!names.includes(n)) await api('batches', 'POST', { name:n, password:'1234' });
-  }catch(_){ }
-}
-
 async function seedSettings(){
   try{
     const s = await api('settings?id=eq.1');
@@ -865,25 +845,137 @@ async function deleteUploadedFile(type){
   }catch(e){ showToast('❌ মুছতে ব্যর্থ: ' + e.message, 'error'); }
 }
 
-async function deleteBatch(id){
-  const b = globalBatches.find(x => x.id == id);
-  if(!b || !confirm(`"${b.name}" ব্যাচ মুছবেন? সব ডেটা মুছে যাবে!`)) return;
+let batchDeleteTargetId = null;
+
+function escHtml(v){
+  return String(v ?? '').replace(/[&<>"']/g, s => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  }[s]));
+}
+
+function closeBatchDeleteConfirm(){
+  const modal = document.getElementById('batchDeleteModal');
+  if(modal) modal.remove();
+  batchDeleteTargetId = null;
+}
+
+function openBatchDeleteConfirm(batch){
+  closeBatchDeleteConfirm();
+  batchDeleteTargetId = batch.id;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay show';
+  overlay.id = 'batchDeleteModal';
+  overlay.innerHTML = `
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-title">⚠️ ব্যাচ মুছে ফেলবেন?</div>
+      <p style="font-size:.9em;color:var(--gray);margin-bottom:14px;line-height:1.6">
+        এই ব্যাচটি এবং এর সব সংশ্লিষ্ট ডেটা স্থায়ীভাবে মুছে যাবে।
+      </p>
+      <div class="modal-info-row"><span>ব্যাচের নাম</span><span>${escHtml(batch.name)}</span></div>
+      <div class="modal-info-row"><span>স্টুডেন্ট</span><span>${batch.studentCount} জন</span></div>
+      <div class="modal-info-row"><span>টেস্ট</span><span>${batch.testCount} টি</span></div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeBatchDeleteConfirm()">বাতিল</button>
+        <button class="btn btn-danger" onclick="confirmDeleteBatch()">হ্যাঁ, মুছে দাও</button>
+      </div>
+    </div>
+  `;
+  overlay.addEventListener('click', closeBatchDeleteConfirm);
+  document.body.appendChild(overlay);
+}
+
+async function confirmDeleteBatch(){
+  const id = batchDeleteTargetId;
+  if(!id) return;
+  closeBatchDeleteConfirm();
+
   try{
-    const students = await api(`students?batch_id=eq.${id}`);
-    for(const s of students) await api(`attempts?student_id=eq.${s.id}`, 'DELETE');
-    await api(`students?batch_id=eq.${id}`, 'DELETE');
-    const tests = await api(`tests?batch_id=eq.${id}`);
-    for(const t of tests){
-      await api(`test_questions?test_id=eq.${t.id}`, 'DELETE');
-      await api(`attempts?test_id=eq.${t.id}`, 'DELETE');
+    showToast('🗑️ ব্যাচ ডিলিট হচ্ছে...', 'info');
+
+    const batchRes = await api(`batches?id=eq.${id}`);
+    const batch = batchRes?.[0];
+    if(!batch){
+      showToast('❌ ব্যাচ পাওয়া যায়নি', 'error');
+      return;
     }
+
+    // ১. batch-এর সব students fetch করো
+    const students = await api(`students?batch_id=eq.${id}&select=id`);
+
+    // ২. batch-এর সব tests fetch করো
+    const tests = await api(`tests?batch_id=eq.${id}&select=id`);
+
+    // ৩. প্রতিটা test-এর জন্য attempts fetch করো (test_id দিয়ে)
+    // ৪. প্রতিটা attempt-এর জন্য answers delete করো (attempt_id দিয়ে)
+    // ৫. সব attempts delete করো (test_id দিয়ে)
+    // ৬. সব test_questions delete করো (test_id দিয়ে)
+    for(const t of tests){
+      const attempts = await api(`attempts?test_id=eq.${t.id}&select=id`);
+      for(const a of attempts){
+        await api(`answers?attempt_id=eq.${a.id}`, 'DELETE');
+      }
+      await api(`attempts?test_id=eq.${t.id}`, 'DELETE');
+      await api(`test_questions?test_id=eq.${t.id}`, 'DELETE');
+    }
+
+    // ৭. প্রতিটা student-এর attempts fetch করো
+    // ৮. প্রতিটা attempt-এর answers delete করো
+    // ৯. সব attempts delete করো (student_id দিয়ে)
+    for(const s of students){
+      const attempts = await api(`attempts?student_id=eq.${s.id}&select=id`);
+      for(const a of attempts){
+        await api(`answers?attempt_id=eq.${a.id}`, 'DELETE');
+      }
+      await api(`attempts?student_id=eq.${s.id}`, 'DELETE');
+    }
+
+    // ১০. সব students delete করো (batch_id দিয়ে)
+    await api(`students?batch_id=eq.${id}`, 'DELETE');
+
+    // ১১. সব tests delete করো (batch_id দিয়ে)
     await api(`tests?batch_id=eq.${id}`, 'DELETE');
+
+    // ১২. batches delete করো (id দিয়ে)
     await api(`batches?id=eq.${id}`, 'DELETE');
+
     showToast('✅ ব্যাচ মুছে ফেলা হয়েছে');
     await refreshGlobalBatches();
     loadAdminBatches();
-  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
+  }catch(e){
+    showToast('❌ ব্যর্থ: ' + (e.message || 'অজানা ত্রুটি'), 'error');
+  }
 }
+
+async function deleteBatch(id){
+  try{
+    const [batchRes, students, tests] = await Promise.all([
+      api(`batches?id=eq.${id}`),
+      api(`students?batch_id=eq.${id}&select=id`),
+      api(`tests?batch_id=eq.${id}&select=id`)
+    ]);
+
+    const batch = batchRes?.[0];
+    if(!batch){
+      showToast('❌ ব্যাচ পাওয়া যায়নি', 'error');
+      return;
+    }
+
+    openBatchDeleteConfirm({
+      id: batch.id,
+      name: batch.name || 'ব্যাচ',
+      studentCount: students.length,
+      testCount: tests.length
+    });
+  }catch(e){
+    showToast('❌ ব্যর্থ: ' + (e.message || 'অজানা ত্রুটি'), 'error');
+  }
+}
+
 
 function renderBuilder(){
   const q = (document.getElementById('builderSearch').value || '').toLowerCase();
@@ -1089,7 +1181,6 @@ async function saveAppDownloadLink(){
 
 window.onload = async () => {
   try{
-    await seedDefaultBatches();
     await seedSettings();
     await refreshGlobalBatches();
   }catch(_){ }
