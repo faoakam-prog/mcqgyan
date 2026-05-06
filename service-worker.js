@@ -1,34 +1,48 @@
-const CACHE = 'gyanangon-v8';
+const CACHE = 'gyanangon-v9';
 const ASSETS = [
-  '/',
-  '/index.html',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png'
 ];
+
 self.addEventListener('install', e => {
+  self.skipWaiting(); // সাথে সাথে নতুন SW চালু হবে
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
-  self.skipWaiting();
 });
+
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys => Promise.all(
-      keys.filter(k => k !== CACHE).map(k => caches.delete(k))
-    ))
+    caches.keys()
+      .then(keys => Promise.all(
+        keys.filter(k => k !== CACHE).map(k => caches.delete(k))
+      ))
+      .then(() => self.clients.claim()) // সব ট্যাব নতুন SW-এর আন্ডারে
   );
-  self.clients.claim();
 });
+
 self.addEventListener('fetch', e => {
-  // Supabase API calls — সরাসরি নেটওয়ার্ক
-  if (e.request.url.includes('supabase.co')) {
+  const url = e.request.url;
+
+  // Supabase API — সবসময় নেটওয়ার্ক
+  if (url.includes('supabase.co')) return;
+
+  // index.html ও admin.html — সবসময় নেটওয়ার্ক থেকে নেবে
+  // deploy হলে সাথে সাথে নতুন ফাইল পাবে
+  if (url.includes('index.html') || url.includes('admin.html') || url.endsWith('/')) {
+    e.respondWith(
+      fetch(e.request)
+        .then(res => {
+          // সফল হলে cache-ও আপডেট করো
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+          return res;
+        })
+        .catch(() => caches.match('/index.html')) // অফলাইনে cache থেকে
+    );
     return;
   }
-  // admin.html — কখনো cache করবে না, সবসময় নেটওয়ার্ক থেকে নেবে
-  if (e.request.url.includes('admin.html')) {
-    e.respondWith(fetch(e.request).catch(() => caches.match('/index.html')));
-    return;
-  }
-  // App shell — cache first, network fallback
+
+  // বাকি সব (icon, manifest) — cache first
   e.respondWith(
     caches.match(e.request).then(cached => {
       return cached || fetch(e.request).then(res => {
