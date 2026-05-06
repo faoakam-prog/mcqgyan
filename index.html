@@ -224,19 +224,6 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
 </div>
 
 <!-- PASSWORD MODAL (লেকচার শিটের জন্য) -->
-<!-- BACK BUTTON CONFIRM MODAL -->
-<div class="modal-overlay" id="backConfirmModal">
-  <div class="modal-box" onclick="event.stopPropagation()">
-    <div class="modal-title">⚠️ পরীক্ষা থেকে বের হবেন?</div>
-    <p style="font-size:.9em;color:var(--gray);margin-bottom:18px;line-height:1.7">
-      বের হলে এখন পর্যন্ত দেওয়া উত্তর <b>স্বয়ংক্রিয়ভাবে জমা</b> হয়ে যাবে।<br>তারপরও কি বের হতে চান?
-    </p>
-    <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeBackConfirm()">না, পরীক্ষা চালিয়ে যাই</button>
-      <button class="btn btn-danger" onclick="confirmBackExit()">হ্যাঁ, জমা দিয়ে বের হই</button>
-    </div>
-  </div>
-</div>
 
 <div class="modal-overlay" id="pwModal">
   <div class="modal-box">
@@ -348,7 +335,7 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
       <div class="progress-bar"><div class="progress-fill" id="quizFill" style="width:0%"></div></div>
       <div style="display:flex;justify-content:space-between;font-size:.87em;font-weight:700">
         <span style="color:var(--green)">উত্তর: <span id="ansCount">0</span>/<span id="totalQCount">0</span></span>
-        <span style="color:var(--gold)">✅ <span id="correctCount">0</span></span>
+        <span id="correctCount" style="display:none">0</span>
         <span style="color:var(--red)">➖ <span id="negMarkDisplay">0.25</span></span>
       </div>
     </div>
@@ -1051,15 +1038,6 @@ function selectAns(qId,opt){
   let c=0;currentQuestions.forEach(q=>{if(userAnswers[q.id]===q.correct)c++;});
   document.getElementById('correctCount').textContent=c;
   document.getElementById('quizFill').style.width=(ans/currentQuestions.length*100)+'%';
-}
-
-function closeBackConfirm(){
-  document.getElementById('backConfirmModal').classList.remove('show');
-}
-
-async function confirmBackExit(){
-  closeBackConfirm();
-  await submitQuiz();
 }
 
 async function confirmSubmitInProgress(testId){
