@@ -344,6 +344,7 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
             <button class="btn btn-small btn-gold" style="width:auto" onclick="exportQuestionsCSV()">CSV Export</button>
             <button class="btn btn-small btn-danger" style="width:auto" onclick="deleteSelectedQuestions()">নির্বাচিত মুছুন</button>
+            <button class="btn btn-small btn-primary" style="width:auto" onclick="sendSelectedToBuilder()">🛠️ নির্বাচিত দিয়ে টেস্ট বানাও</button>
           </div>
         </div>
         <div style="overflow-x:auto">
@@ -437,7 +438,7 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
         <div class="card">
           <div class="card-header">📢 ঘোষণা পপআপ (সব ইউজারের জন্য)</div>
           <p style="font-size:.83em;color:var(--gray-mid);margin-bottom:10px">
-            এই বার্তা সব লগইন ইউজারের কাছে পপআপ হিসেবে দেখাবে। ইউজার "পড়েছি" ক্লিক করলে তার কাছে আর দেখাবে না। নতুন ঘোষণা দিলে আবার সবার কাছে দেখাবে।
+            এই বার্তা সব লগইন ইউজারের কাছে পপআপ হিসেবে দেখাবে। ইউজার "পড়েছি" ক্লিক করলে ২৪ ঘণ্টার জন্য বন্ধ হবে — পরদিন আবার দেখাবে। নতুন ঘোষণা দিলে সাথে সাথে সবার কাছে দেখাবে।
           </p>
           <div class="field">
             <label>ঘোষণার শিরোনাম</label>
@@ -1361,6 +1362,22 @@ async function deleteSelectedQuestions(){
     loadQuestions();
     loadBuilder();
   }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
+}
+
+function sendSelectedToBuilder(){
+  const ids = [...selectedQuestionIds];
+  if(!ids.length) return showToast('কোনো প্রশ্ন নির্বাচন করা নেই', 'error');
+  const selected = currentQuestionRows.filter(q => ids.includes(q.id));
+  if(!selected.length) return showToast('নির্বাচিত প্রশ্ন পাওয়া যায়নি', 'error');
+  // বিল্ডারে যোগ করো (ডুপ্লিকেট এড়াতে)
+  let added = 0;
+  selected.forEach(q => {
+    const isDup = builderUploadedQuestions.some(x => x.question_ar === q.question_ar);
+    if(!isDup){ builderUploadedQuestions.push({...q}); added++; }
+  });
+  showToast(`✅ ${added}টি প্রশ্ন বিল্ডারে পাঠানো হয়েছে`);
+  // টেস্ট বিল্ডার ট্যাবে যাও
+  switchAdminTab('builder', document.querySelector('.sidebar .nav-item:nth-child(3)'));
 }
 
 function exportQuestionsCSV(){
