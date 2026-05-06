@@ -287,42 +287,47 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
 
       <div class="admin-page" id="admin-builder">
         <div class="card">
-          <div class="card-header">১. টেস্ট সেটআপ</div>
+          <div class="card-header">টেস্ট সেটআপ</div>
           <div class="field"><label>পরীক্ষার নাম</label><input type="text" id="bTestName" placeholder="যেমন: ৫ম সাপ্তাহিক পরীক্ষা"></div>
           <div class="field"><label>ব্যাচ নির্বাচন</label><select id="bBatchSelect"></select></div>
           <div class="form-row">
             <div class="field"><label>সময় (মিনিট)</label><input type="number" id="bDuration" value="25" min="5"></div>
             <div class="field"><label>পূর্ণমান</label><input type="number" id="bTotalMarks" value="30" min="1"></div>
           </div>
-          <div class="field"><label>নেগেটিভ মার্ক (প্রতি ভুলে)</label><input type="number" id="bNegMark" value="0.25" step="0.25" min="0"></div>
-          <div class="field">
-            <label>অপশন লেবেল ভাষা</label>
-            <select id="bOptLang">
-              <option value="ar">আরবি — أ ب ج د</option>
-              <option value="bn">বাংলা — ক খ গ ঘ</option>
-              <option value="en">ইংরেজি — A B C D</option>
-            </select>
-            <p class="help-text">পরীক্ষায় অপশনের পাশে কোন লেবেল দেখাবে তা নির্বাচন করুন।</p>
+          <div class="form-row">
+            <div class="field"><label>নেগেটিভ মার্ক (প্রতি ভুলে)</label><input type="number" id="bNegMark" value="0.25" step="0.25" min="0"></div>
+            <div class="field">
+              <label>অপশন লেবেল ভাষা</label>
+              <select id="bOptLang">
+                <option value="ar">আরবি — أ ب ج د</option>
+                <option value="bn">বাংলা — ক খ গ ঘ</option>
+                <option value="en">ইংরেজি — A B C D</option>
+              </select>
+            </div>
           </div>
-          <button class="btn btn-primary" onclick="saveTest()">✅ টেস্ট সেভ করুন</button>
         </div>
         <div class="card">
-          <div class="card-header">২. প্রশ্ন ব্যাংক থেকে সিলেক্ট করুন</div>
-          <div class="form-row">
-            <div class="field"><label>সার্চ</label><input type="text" id="builderSearch" placeholder="প্রশ্ন খুঁজুন..." oninput="loadBuilder()"></div>
-            <div class="field"><label>নির্বাচিত প্রশ্ন</label><input type="text" id="builderCount" disabled value="0"></div>
+          <div class="card-header">📂 CSV থেকে প্রশ্ন আপলোড করুন</div>
+          <p class="help-text" style="margin-bottom:10px">CSV আপলোড করলে প্রশ্নগুলো স্বয়ংক্রিয়ভাবে নিচের তালিকায় যোগ হবে।</p>
+          <div class="form-row" style="align-items:flex-end">
+            <div class="field" style="margin:0"><label>CSV ফাইল নির্বাচন করুন</label><input type="file" id="builderCsvFile" accept=".csv"></div>
+            <button class="btn btn-gold" style="width:auto;padding:10px 18px" onclick="uploadCSVToBuilder()">⬆ আপলোড ও যোগ করুন</button>
           </div>
-          <div class="form-row">
-            <div>
-              <div class="section-title">উপলব্ধ প্রশ্ন</div>
-              <div id="builderAvailable" style="max-height:320px;overflow:auto;border:1px solid var(--border);border-radius:10px;padding:10px;background:#fff"></div>
-            </div>
-            <div>
-              <div class="section-title">নির্বাচিত প্রশ্ন</div>
-              <div id="builderSelected" style="max-height:320px;overflow:auto;border:1px solid var(--border);border-radius:10px;padding:10px;background:#fff"></div>
+          <div id="builderUploadStatus" style="margin-top:8px;font-size:.85em;color:var(--green);display:none"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">প্রশ্ন তালিকা <span id="builderCountBadge" style="background:var(--green);color:#fff;padding:2px 10px;border-radius:12px;font-size:.8em;margin-left:6px">0</span></div>
+          <div class="form-row" style="margin-bottom:10px">
+            <div class="field" style="margin:0"><input type="text" id="builderSearch" placeholder="🔍 প্রশ্ন খুঁজুন..." oninput="filterBuilderList()"></div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn btn-small btn-primary" onclick="selectAllBuilder()">সব নির্বাচন</button>
+              <button class="btn btn-small btn-danger" onclick="clearBuilderList()">🗑 সব মুছুন</button>
             </div>
           </div>
-          <button class="btn btn-gold" style="margin-top:12px" onclick="loadBuilder()">🔄 রিফ্রেশ প্রশ্ন</button>
+          <div id="builderList" style="max-height:380px;overflow:auto;border:1px solid var(--border);border-radius:10px;padding:8px;background:#fff">
+            <div class="empty-msg">এখনো কোনো প্রশ্ন নেই — CSV আপলোড করুন</div>
+          </div>
+          <button class="btn btn-primary" style="margin-top:14px" onclick="saveTestFromBuilder()">✅ টেস্ট তৈরি করুন</button>
         </div>
       </div>
 
@@ -465,6 +470,7 @@ let builderQuestionPool = [];
 let builderPickedQuestions = [];
 let builderTestId = null;
 let builderQuestionCount = 0;
+let builderUploadedQuestions = []; // CSV থেকে আপলোড হওয়া প্রশ্নের তালিকা
 let lastResultData = { title:'', subtitle:'', rows:[] };
 
 async function api(endpoint, method='GET', body=null){
@@ -1042,68 +1048,129 @@ async function deleteBatch(id){
 }
 
 
-function renderBuilder(){
-  const q = (document.getElementById('builderSearch').value || '').toLowerCase();
-  const poolHtml = builderQuestionPool.filter(x => !builderPickedQuestions.some(y => y.id === x.id))
-    .filter(x => !q || [x.question_ar, x.opt_a, x.opt_b, x.opt_c, x.opt_d].join(' ').toLowerCase().includes(q))
-    .map(x => `<div class="list-item" style="cursor:default;align-items:flex-start">
-      <div style="flex:1">
-        <strong>${x.question_ar || ''}</strong>
-        <br><small style="color:var(--gray-mid)">A) ${x.opt_a || ''} | B) ${x.opt_b || ''} | C) ${x.opt_c || ''} | D) ${x.opt_d || ''}</small>
-      </div>
-      <button class="btn btn-small btn-primary" onclick="addQToBuilder(${x.id})">➕</button>
-    </div>`).join('') || '<div class="empty-msg">কোনো প্রশ্ন নেই</div>';
-  const selHtml = builderPickedQuestions.map(x => `<div class="list-item list-item-arc" style="cursor:default;align-items:flex-start">
-      <div style="flex:1">
-        <strong>${x.question_ar || ''}</strong>
-        <br><small style="color:var(--gray-mid)">A) ${x.opt_a || ''} | B) ${x.opt_b || ''} | C) ${x.opt_c || ''} | D) ${x.opt_d || ''}</small>
-      </div>
-      <button class="btn btn-small btn-danger" onclick="removeQFromBuilder(${x.id})">➖</button>
-    </div>`).join('') || '<div class="empty-msg">এখনো কোনো প্রশ্ন নেই</div>';
-  document.getElementById('builderAvailable').innerHTML = poolHtml;
-  document.getElementById('builderSelected').innerHTML = selHtml;
-  document.getElementById('builderCount').value = String(builderPickedQuestions.length);
+// ══ BUILDER: CSV আপলোড করে সরাসরি টেস্ট তৈরি ══
+
+function uploadCSVToBuilder(){
+  const file = document.getElementById('builderCsvFile')?.files?.[0];
+  if(!file) return showToast('CSV ফাইল সিলেক্ট করুন', 'error');
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const qs = parseCSV(e.target.result);
+    if(!qs.length) return showToast('CSV খালি বা ফরম্যাট ভুল', 'error');
+    // পুরানো লিস্টে যোগ করো (ডুপ্লিকেট এড়াতে question_ar চেক)
+    let added = 0;
+    qs.forEach(q => {
+      const isDup = builderUploadedQuestions.some(x => x.question_ar === q.question_ar);
+      if(!isDup){ builderUploadedQuestions.push(q); added++; }
+    });
+    document.getElementById('builderCsvFile').value = '';
+    const statusEl = document.getElementById('builderUploadStatus');
+    statusEl.textContent = `✅ ${added}টি প্রশ্ন যোগ হয়েছে (মোট: ${builderUploadedQuestions.length}টি)`;
+    statusEl.style.display = 'block';
+    renderBuilderList();
+    showToast(`✅ ${added}টি প্রশ্ন লোড হয়েছে`);
+  };
+  reader.readAsText(file, 'UTF-8');
 }
 
-async function loadBuilder(){
-  builderQuestionPool = await api('questions?order=id.desc');
-  renderBuilder();
+function renderBuilderList(){
+  const q = (document.getElementById('builderSearch')?.value || '').toLowerCase();
+  const list = builderUploadedQuestions.filter(x =>
+    !q || [x.question_ar, x.opt_a, x.opt_b, x.opt_c, x.opt_d].join(' ').toLowerCase().includes(q)
+  );
+  document.getElementById('builderCountBadge').textContent = builderUploadedQuestions.length + 'টি';
+  document.getElementById('builderList').innerHTML = list.length
+    ? list.map((x, i) => `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px;border-bottom:1px solid var(--border);background:${x._selected===false?'var(--red-pale)':'#fff'}">
+        <input type="checkbox" id="bq-${i}" ${x._selected===false?'':'checked'} onchange="toggleBuilderQ(${builderUploadedQuestions.indexOf(x)})" style="margin-top:4px;width:16px;height:16px;cursor:pointer;flex-shrink:0">
+        <label for="bq-${i}" style="flex:1;cursor:pointer">
+          <div style="font-size:.95em;font-weight:600;margin-bottom:3px">${x.question_ar || ''}</div>
+          <div style="font-size:.8em;color:var(--gray-mid)">أ) ${x.opt_a||''} | ب) ${x.opt_b||''} | ج) ${x.opt_c||''} | د) ${x.opt_d||''}</div>
+          <div style="font-size:.78em;color:var(--green);margin-top:2px">✓ সঠিক: ${(x.correct||'').toUpperCase()}</div>
+        </label>
+        <button class="btn btn-small btn-danger" onclick="removeBuilderQ(${builderUploadedQuestions.indexOf(x)})" style="flex-shrink:0">✕</button>
+      </div>`).join('')
+    : '<div class="empty-msg">কোনো প্রশ্ন নেই</div>';
 }
 
-function addQToBuilder(id){
-  const q = builderQuestionPool.find(x => x.id == id);
-  if(!q) return;
-  if(builderPickedQuestions.some(x => x.id == id)) return;
-  builderPickedQuestions.push(q);
-  renderBuilder();
+function filterBuilderList(){
+  renderBuilderList();
 }
 
-function removeQFromBuilder(id){
-  builderPickedQuestions = builderPickedQuestions.filter(x => x.id != id);
-  renderBuilder();
+function toggleBuilderQ(idx){
+  if(builderUploadedQuestions[idx]._selected === false){
+    delete builderUploadedQuestions[idx]._selected;
+  } else {
+    builderUploadedQuestions[idx]._selected = false;
+  }
+  renderBuilderList();
 }
 
-async function saveTest(){
+function removeBuilderQ(idx){
+  builderUploadedQuestions.splice(idx, 1);
+  renderBuilderList();
+}
+
+function selectAllBuilder(){
+  builderUploadedQuestions.forEach(q => delete q._selected);
+  renderBuilderList();
+  showToast('সব প্রশ্ন নির্বাচিত হয়েছে');
+}
+
+function clearBuilderList(){
+  if(!builderUploadedQuestions.length) return;
+  if(!confirm('সব প্রশ্ন মুছে ফেলবেন?')) return;
+  builderUploadedQuestions = [];
+  renderBuilderList();
+  document.getElementById('builderUploadStatus').style.display = 'none';
+}
+
+async function saveTestFromBuilder(){
   const name = document.getElementById('bTestName').value.trim();
   const bId = document.getElementById('bBatchSelect').value;
   const dur = parseInt(document.getElementById('bDuration').value) || 25;
   const marks = parseInt(document.getElementById('bTotalMarks').value) || 30;
   const neg = parseFloat(document.getElementById('bNegMark').value) || 0.25;
   const optLang = document.getElementById('bOptLang').value || 'ar';
-  if(!name || !bId) return showToast('নাম ও ব্যাচ নির্বাচন করুন', 'error');
-  if(!builderPickedQuestions.length) return showToast('কমপক্ষে ১টি প্রশ্ন সিলেক্ট করুন', 'error');
+  if(!name) return showToast('পরীক্ষার নাম লিখুন', 'error');
+  if(!bId) return showToast('ব্যাচ নির্বাচন করুন', 'error');
+  const selectedQs = builderUploadedQuestions.filter(q => q._selected !== false);
+  if(!selectedQs.length) return showToast('কমপক্ষে ১টি প্রশ্ন নির্বাচন করুন', 'error');
   try{
+    showToast('⏳ টেস্ট তৈরি হচ্ছে...', 'info');
+    // ১. প্রশ্নগুলো DB তে সেভ করো
+    const savedQs = await api('questions', 'POST', selectedQs.map(q => ({
+      question_ar: q.question_ar,
+      opt_a: q.opt_a,
+      opt_b: q.opt_b,
+      opt_c: q.opt_c,
+      opt_d: q.opt_d,
+      correct: q.correct,
+      explanation_bn: q.explanation_bn || ''
+    })));
+    // ২. টেস্ট তৈরি করো
     const t = await api('tests', 'POST', { name, batch_id:parseInt(bId), duration_minutes:dur, total_marks:marks, negative_mark:neg, option_lang:optLang });
-    builderTestId = t[0].id;
-    await api('test_questions', 'POST', builderPickedQuestions.map(q => ({ test_id:builderTestId, question_id:q.id })));
-    showToast('✅ টেস্ট সেভ হয়েছে');
-    builderQuestionCount = builderPickedQuestions.length;
-    builderPickedQuestions = [];
+    const testId = t[0].id;
+    // ৩. test_questions লিংক করো
+    await api('test_questions', 'POST', savedQs.map(q => ({ test_id:testId, question_id:q.id })));
+    showToast(`✅ টেস্ট তৈরি হয়েছে! ${selectedQs.length}টি প্রশ্ন যোগ হয়েছে`);
+    // রিসেট
+    builderUploadedQuestions = [];
     document.getElementById('bTestName').value = '';
-    renderBuilder();
+    document.getElementById('builderUploadStatus').style.display = 'none';
+    renderBuilderList();
     loadAdminDashboard();
+    switchAdminTab('dash', document.querySelector('.sidebar .nav-item'));
   }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
 }
+
+// পুরাতন function গুলো (প্রশ্ন ব্যাংক ট্যাবের জন্য রাখা হয়েছে)
+function renderBuilder(){ }
+async function loadBuilder(){
+  if(document.getElementById('builderAvailable')) renderBuilderList();
+}
+function addQToBuilder(id){ }
+function removeQFromBuilder(id){ }
+async function saveTest(){ await saveTestFromBuilder(); }
 
 async function loadQuestions(){
   const q = (document.getElementById('qSearch')?.value || '').toLowerCase();
