@@ -176,8 +176,9 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
 <div id="appSplash" class="splash-overlay" style="display:none">
   <div class="splash-box">
     <img src="icon-192.png" alt="জ্ঞানাঙ্গন" class="splash-logo">
-    <div class="splash-title">জ্ঞানাঙ্গন</div>
-    <div class="splash-subtitle">Learn smartly, be smarter.</div>
+    <div class="splash-title" id="splashTitleEl">জ্ঞানাঙ্গন</div>
+    <div class="splash-subtitle" id="splashSubtitleEl">Learn smartly, be smarter.</div>
+    <div class="splash-message" id="splashMessageEl" style="font-size:.85em;color:var(--gray-mid);margin:10px 0 16px;line-height:1.5;display:none"></div>
     <button class="btn-app-download" id="downloadAppBtn" onclick="goDownloadApp()">
       <span style="font-size:1.4em">📲</span>
       <div style="text-align:left">
@@ -187,6 +188,16 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
     </button>
     <div class="splash-divider">অথবা</div>
     <button class="btn-web-continue" onclick="continueToWebsite()">🌐 ওয়েবসাইটে কন্টিনিউ করুন</button>
+  </div>
+</div>
+
+<div id="announcePopup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9998;align-items:center;justify-content:center;padding:18px">
+  <div style="background:#fff;border-radius:16px;padding:24px 22px;max-width:440px;width:100%;box-shadow:0 16px 50px rgba(0,0,0,.35);max-height:80vh;overflow-y:auto">
+    <div style="font-size:1.15em;font-weight:700;color:var(--green);margin-bottom:14px;display:flex;align-items:center;gap:8px">
+      📢 গুরুত্বপূর্ণ ঘোষণা
+    </div>
+    <div id="announceText" style="white-space:pre-wrap;font-size:.95em;line-height:1.65;color:var(--dark);margin-bottom:18px"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="markAnnouncementRead()">✅ পড়েছি, বন্ধ করুন</button>
   </div>
 </div>
 
@@ -805,6 +816,14 @@ function saveAdmin(){sessionStorage.setItem('gya_adm','1');}
 function clearAdmin(){sessionStorage.removeItem('gya_adm');}
 function isAdmin(){return sessionStorage.getItem('gya_adm')==='1';}
 
+window.addEventListener('beforeunload', function(e){
+  if(localStorage.getItem('exam_active')){
+    e.preventDefault();
+    e.returnValue = 'পরীক্ষা চলছে! পেইজ ছাড়লে ডেটা থাকলেও কিছু প্রশ্নের উত্তর হারাতে পারে।';
+    return e.returnValue;
+  }
+});
+
 // ══════════════════════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════════════════════
@@ -879,12 +898,15 @@ const DEFAULT_ADMIN_PASS = 'gyanangon2025';
 window.onload=async()=>{
   await seedSettings();
   await refreshGlobalBatches().catch(()=>{});
+  await showSplashIfNeeded();
   const saved=loadSession();
   if(saved){
     currentStudent=saved;
     document.getElementById('dashStudentName').textContent='স্বাগতম, '+currentStudent.name;
     const b=globalBatches.find(x=>x.id==currentStudent.batch_id);
     if(b) document.getElementById('dashBatchName').textContent='ব্যাচ: '+b.name;
+    const resumed = await tryResumeExam();
+    if(resumed) return; // exam resume হলে dashboard লোড করার দরকার নেই
     await loadStudentDashboard();
     goTo('screenDashboard',false);
     return;
@@ -919,6 +941,8 @@ async function studentLogin(){
     saveSession();
     document.getElementById('dashStudentName').textContent='স্বাগতম, '+currentStudent.name;
     document.getElementById('dashBatchName').textContent='ব্যাচ: '+batch.name;
+    const resumed = await tryResumeExam();
+    if(resumed) return;
     await loadStudentDashboard();
     goTo('screenDashboard',true);
   }catch(e){console.error(e);showToast('লগইন ব্যর্থ। আবার চেষ্টা করুন।','error');}
@@ -972,6 +996,30 @@ async function loadStudentDashboard(){
   aD.innerHTML=aH||'<div class="empty-msg">⏳ কোনো সচল পরীক্ষা নেই</div>';
   rD.innerHTML=rH||'<div class="empty-msg">📭 কোনো প্রকাশিত ফলাফল নেই</div>';
   arcD.innerHTML=arcH||'<div class="empty-msg">📚 কোনো আর্কাইভ পরীক্ষা নেই</div>';
+  checkAnnouncement();
+}
+
+async function checkAnnouncement(){
+  try{
+    const s = await api('settings?id=eq.1');
+    if(!s || !s[0]) return;
+    const text = (s[0].announcement_text || '').trim();
+    const id = (s[0].announcement_id || '').trim();
+    if(!text || !id) return;
+    
+    const seenId = localStorage.getItem('seen_announcement_id') || '';
+    if(seenId === id) return; // আগে দেখেছে
+    
+    document.getElementById('announceText').textContent = text;
+    document.getElementById('announcePopup').dataset.currentId = id;
+    document.getElementById('announcePopup').style.display = 'flex';
+  }catch(e){console.error('Announce error:', e);}
+}
+
+function markAnnouncementRead(){
+  const id = document.getElementById('announcePopup').dataset.currentId || '';
+  if(id) localStorage.setItem('seen_announcement_id', id);
+  document.getElementById('announcePopup').style.display = 'none';
 }
 
 // ══════════════════════════════════════════════════
@@ -1068,6 +1116,15 @@ async function startTest(id){
     document.getElementById('correctCount').textContent=0;
     document.getElementById('quizFill').style.width='0%';
     renderQuestions();
+    const examState = {
+      testId: id,
+      isArchiveMode: isArchiveMode,
+      startTime: Date.now(),
+      durationSec: timeRemaining,
+      studentId: currentStudent.id,
+      userAnswers: {}
+    };
+    localStorage.setItem('exam_active', JSON.stringify(examState));
     goTo('screenQuiz',true);
     const tb=document.getElementById('timerBox');
     tb.classList.add('show');tb.classList.remove('danger');
@@ -1097,6 +1154,13 @@ function renderQuestions(){
 
 function selectAns(qId,opt){
   userAnswers[qId]=opt;
+  try{
+    const st = JSON.parse(localStorage.getItem('exam_active') || '{}');
+    if(st.testId){
+      st.userAnswers = userAnswers;
+      localStorage.setItem('exam_active', JSON.stringify(st));
+    }
+  }catch(_){}
   document.querySelectorAll(`[id^="opt-${qId}"]`).forEach(el=>el.classList.remove('selected'));
   document.getElementById(`opt-${qId}-${opt}`).classList.add('selected');
   const ans=Object.keys(userAnswers).length;
@@ -1108,6 +1172,7 @@ function selectAns(qId,opt){
 
 async function submitQuiz(){
   clearInterval(timerInterval);timerInterval=null;
+  localStorage.removeItem('exam_active');
   document.getElementById('timerBox').classList.remove('show','danger');
   let c=0,w=0,sk=0;
   currentQuestions.forEach(q=>{
@@ -1119,6 +1184,95 @@ async function submitQuiz(){
   const score=parseFloat(Math.max(0,c-(w*neg)).toFixed(2));
   await saveAttempt(score,c,w,sk);
   renderResultView(c,w,sk,score);
+}
+
+async function tryResumeExam(){
+  const raw = localStorage.getItem('exam_active');
+  if(!raw) return false;
+  try{
+    const st = JSON.parse(raw);
+    if(!st.testId || !currentStudent || st.studentId !== currentStudent.id){
+      localStorage.removeItem('exam_active');
+      return false;
+    }
+    
+    // সময় হিসাব
+    const elapsed = Math.floor((Date.now() - st.startTime) / 1000);
+    const remaining = st.durationSec - elapsed;
+    
+    // টেস্ট ও প্রশ্ন আবার লোড
+    const t = await api(`tests?id=eq.${st.testId}`);
+    if(!t.length){ localStorage.removeItem('exam_active'); return false; }
+    currentTest = t[0];
+    isArchiveMode = !!st.isArchiveMode;
+    
+    const links = await api(`test_questions?test_id=eq.${st.testId}`);
+    if(!links.length){ localStorage.removeItem('exam_active'); return false; }
+    const qIds = links.map(l=>l.question_id).join(',');
+    currentQuestions = await api(`questions?id=in.(${qIds})`);
+    if(!currentQuestions.length){ localStorage.removeItem('exam_active'); return false; }
+    
+    userAnswers = st.userAnswers || {};
+    
+    // সময় শেষ হয়ে গেলে সাথে সাথে submit
+    if(remaining <= 0){
+      timeRemaining = 0;
+      document.getElementById('totalQCount').textContent = currentQuestions.length;
+      document.getElementById('negMarkDisplay').textContent = currentTest.negative_mark ?? 0.25;
+      renderQuestions();
+      // আগের নির্বাচনগুলো হাইলাইট
+      Object.keys(userAnswers).forEach(qid=>{
+        const opt = userAnswers[qid];
+        const el = document.getElementById(`opt-${qid}-${opt}`);
+        if(el) el.classList.add('selected');
+      });
+      goTo('screenQuiz', true);
+      showToast('⏰ সময় শেষ হয়ে গেছে — স্বয়ংক্রিয়ভাবে জমা হচ্ছে', 'error');
+      setTimeout(()=>submitQuiz(), 1200);
+      return true;
+    }
+    
+    // স্বাভাবিক resume
+    timeRemaining = remaining;
+    document.getElementById('totalQCount').textContent = currentQuestions.length;
+    document.getElementById('negMarkDisplay').textContent = currentTest.negative_mark ?? 0.25;
+    
+    const ansCount = Object.keys(userAnswers).length;
+    let cCount = 0;
+    currentQuestions.forEach(q=>{ if(userAnswers[q.id]===q.correct) cCount++; });
+    document.getElementById('ansCount').textContent = ansCount;
+    document.getElementById('correctCount').textContent = cCount;
+    document.getElementById('quizFill').style.width = (ansCount/currentQuestions.length*100)+'%';
+    
+    renderQuestions();
+    // আগের উত্তরগুলো হাইলাইট
+    Object.keys(userAnswers).forEach(qid=>{
+      const opt = userAnswers[qid];
+      const el = document.getElementById(`opt-${qid}-${opt}`);
+      if(el) el.classList.add('selected');
+    });
+    
+    goTo('screenQuiz', true);
+    const tb = document.getElementById('timerBox');
+    tb.classList.add('show');
+    if(timeRemaining <= 60) tb.classList.add('danger');
+    
+    clearInterval(timerInterval);
+    timerInterval = setInterval(()=>{
+      timeRemaining--;
+      const m = Math.floor(timeRemaining/60), s = timeRemaining%60;
+      document.getElementById('timerDisplay').textContent = `${m}:${s<10?'0':''}${s}`;
+      if(timeRemaining <= 60) tb.classList.add('danger');
+      if(timeRemaining <= 0) submitQuiz();
+    }, 1000);
+    
+    showToast('🔄 আগের পরীক্ষা পুনরায় শুরু হলো');
+    return true;
+  }catch(e){
+    console.error('Resume error:', e);
+    localStorage.removeItem('exam_active');
+    return false;
+  }
 }
 
 // ✅ FIX 1: saveAttempt-এ isArchiveMode সঠিকভাবে পাস হচ্ছে
@@ -1704,10 +1858,33 @@ async function generateQuestionPDF(id){
 // ══════════════════════════════════════════════════
 // APP SPLASH SCREEN
 // ══════════════════════════════════════════════════
-function showSplashIfNeeded(){
-  // Show splash only once per session
+async function showSplashIfNeeded(){
   if(sessionStorage.getItem('splashDone')) return;
-  document.getElementById('appSplash').style.display='flex';
+  try{
+    const s = await api('settings?id=eq.1');
+    const settings = s && s[0] ? s[0] : {};
+    const link = (settings.app_download_link || '').trim();
+    
+    // লিংক না থাকলে splash একদম স্কিপ
+    if(!link){
+      sessionStorage.setItem('splashDone','1');
+      return;
+    }
+    
+    // লেখাগুলো বসাও
+    if(settings.splash_title) document.getElementById('splashTitleEl').textContent = settings.splash_title;
+    if(settings.splash_subtitle) document.getElementById('splashSubtitleEl').textContent = settings.splash_subtitle;
+    const msgEl = document.getElementById('splashMessageEl');
+    if(settings.splash_message && settings.splash_message.trim()){
+      msgEl.textContent = settings.splash_message;
+      msgEl.style.display = 'block';
+    }
+    
+    document.getElementById('appSplash').style.display = 'flex';
+  }catch(e){
+    console.error('Splash load error:', e);
+    sessionStorage.setItem('splashDone','1');
+  }
 }
 
 async function goDownloadApp(){
@@ -1751,7 +1928,6 @@ async function saveAppDownloadLink(){
 let deferredPrompt=null;
 window.addEventListener('load',()=>{
   // Show splash on first visit
-  showSplashIfNeeded();
 
   const pwaBar=document.createElement('div');
   pwaBar.id='pwaBar';
