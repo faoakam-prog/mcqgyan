@@ -194,7 +194,7 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
 <div id="announcePopup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9998;align-items:center;justify-content:center;padding:18px">
   <div style="background:#fff;border-radius:16px;padding:24px 22px;max-width:440px;width:100%;box-shadow:0 16px 50px rgba(0,0,0,.35);max-height:80vh;overflow-y:auto">
     <div style="font-size:1.15em;font-weight:700;color:var(--green);margin-bottom:14px;display:flex;align-items:center;gap:8px">
-      📢 গুরুত্বপূর্ণ ঘোষণা
+      <span id="announceTitle">📢 ঘোষণা</span>
     </div>
     <div id="announceText" style="white-space:pre-wrap;font-size:.95em;line-height:1.65;color:var(--dark);margin-bottom:18px"></div>
     <button class="btn btn-primary" style="width:100%" onclick="markAnnouncementRead()">✅ পড়েছি, বন্ধ করুন</button>
@@ -909,11 +909,13 @@ window.onload=async()=>{
     if(resumed) return; // exam resume হলে dashboard লোড করার দরকার নেই
     await loadStudentDashboard();
     goTo('screenDashboard',false);
+    setTimeout(()=>checkAnnouncement(), 1200);
     return;
   }
   const hash=window.location.hash.substring(1);
   if(hash&&document.getElementById(hash)) goTo(hash,false);
   else goTo('screenLogin',false);
+  setTimeout(()=>checkAnnouncement(), 1200);
 };
 
 // ══════════════════════════════════════════════════
@@ -996,7 +998,6 @@ async function loadStudentDashboard(){
   aD.innerHTML=aH||'<div class="empty-msg">⏳ কোনো সচল পরীক্ষা নেই</div>';
   rD.innerHTML=rH||'<div class="empty-msg">📭 কোনো প্রকাশিত ফলাফল নেই</div>';
   arcD.innerHTML=arcH||'<div class="empty-msg">📚 কোনো আর্কাইভ পরীক্ষা নেই</div>';
-  checkAnnouncement();
 }
 
 async function checkAnnouncement(){
@@ -1006,10 +1007,10 @@ async function checkAnnouncement(){
     const text = (s[0].announcement_text || '').trim();
     const id = (s[0].announcement_id || '').trim();
     if(!text || !id) return;
-    
     const seenId = localStorage.getItem('seen_announcement_id') || '';
-    if(seenId === id) return; // আগে দেখেছে
-    
+    if(seenId === id) return;
+    const title = (s[0].announcement_title || '').trim() || 'ঘোষণা';
+    document.getElementById('announceTitle').textContent = '📢 ' + title;
     document.getElementById('announceText').textContent = text;
     document.getElementById('announcePopup').dataset.currentId = id;
     document.getElementById('announcePopup').style.display = 'flex';
@@ -1928,6 +1929,7 @@ async function saveAppDownloadLink(){
 let deferredPrompt=null;
 window.addEventListener('load',()=>{
   // Show splash on first visit
+  showSplashIfNeeded();
 
   const pwaBar=document.createElement('div');
   pwaBar.id='pwaBar';
