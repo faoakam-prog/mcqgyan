@@ -148,6 +148,15 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
 .btn-web-continue{background:transparent;color:var(--green);border:2px solid var(--green);padding:11px 16px;border-radius:12px;width:100%;font-family:inherit;font-size:.95em;font-weight:600;cursor:pointer;transition:all .2s}
 .btn-web-continue:hover{background:var(--green-pale)}
 
+.progress-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(138px,1fr));gap:10px}
+.progress-stat{background:var(--gray-lt);border:1px solid var(--green-pale);border-radius:12px;padding:12px 10px;text-align:center;box-shadow:var(--shadow)}
+.progress-stat-val{font-size:1.45em;font-weight:700;color:var(--green);line-height:1.1}
+.progress-stat-label{font-size:.78em;color:var(--gray-mid);margin-top:4px}
+.progress-stat-dual{grid-column:1/-1;padding:14px 12px;background:var(--green-pale)}
+.progress-stat-dual .dual-wrap{display:flex;justify-content:space-around;gap:12px}
+.progress-stat-dual .progress-stat-val{font-size:1.55em}
+.progress-latest{padding:12px 14px;background:var(--blue-pale);border-radius:12px;border:1px solid #d9e1f3}
+.progress-latest .label{font-size:.78em;color:var(--blue);font-weight:700;margin-bottom:4px}
 /* RESPONSIVE */
 @media(max-width:768px){
   .form-row-3{grid-template-columns:1fr 1fr}
@@ -282,6 +291,12 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
       </div>
     </div>
 
+    <div class="card" id="progressCard" style="border:1.5px solid var(--green-pale);display:none">
+      <div class="card-header" style="margin-bottom:12px">📊 আমার অগ্রগতি</div>
+      <div id="progressGrid" class="progress-stat-grid"></div>
+      <div id="progressLatest" style="margin-top:12px"></div>
+    </div>
+
     <div class="card" id="noticeCard" style="display:none;background:var(--gold-pale);border-left:5px solid var(--gold)">
       <div style="font-weight:700;color:var(--gold);margin-bottom:7px">📢 নোটিশ / ঘোষণা</div>
       <p id="noticeText" style="white-space:pre-wrap;font-size:.92em"></p>
@@ -363,14 +378,32 @@ const OPT_LBL_MAP = {
   en: {a:'A', b:'B', c:'C', d:'D'}
 };
 let OPT_LBL = OPT_LBL_MAP['ar'];
-const PASS_THR = 0.40;
+const DEFAULT_PASS_PERCENT = 40;
 
 let currentStudent=null, currentTest=null, currentQuestions=[], userAnswers={};
 let timerInterval=null, timeRemaining=0, globalBatches=[];
 let isArchiveMode=false;
+let examHistoryLocked=false;
 let pendingExamId=null, isArchivePending=false;
 let logoTaps=0, logoTimer=null;
 
+function getOptionLabels(lang){
+  return OPT_LBL_MAP[lang] || OPT_LBL_MAP['ar'];
+}
+function getPassPercent(test=currentTest){
+  const pct = Number(test?.pass_percent);
+  return Number.isFinite(pct) && pct > 0 ? pct : DEFAULT_PASS_PERCENT;
+}
+function getPassMark(total, test=currentTest){
+  return Number(total || 0) * getPassPercent(test) / 100;
+}
+function enableExamHistoryLock(){
+  examHistoryLocked = true;
+  history.pushState({sid:'screenQuiz', examLock:true}, '', '#screenQuiz');
+}
+function disableExamHistoryLock(){
+  examHistoryLocked = false;
+}
 
 // ══════════════════════════════════════════════════
 // API
@@ -578,6 +611,14 @@ window.addEventListener('beforeunload', function(e){
 function pushH(sid){history.pushState({sid},'',(sid==='screenLogin'?'#login':'#'+sid));}
 
 window.onpopstate=e=>{
+  const examActive = !!localStorage.getItem('exam_active');
+  if(examActive){
+    history.pushState({sid:'screenQuiz', examLock:true}, '', '#screenQuiz');
+    if(!document.getElementById('screenQuiz').classList.contains('active')){
+      goTo('screenQuiz', false);
+    }
+    return;
+  }
   if(document.getElementById('screenQuiz').classList.contains('active')){
     clearInterval(timerInterval);timerInterval=null;
     document.getElementById('timerBox').classList.remove('show','danger');
@@ -702,7 +743,13 @@ async function studentLogin(){
 // ══════════════════════════════════════════════════
 async function loadStudentDashboard(){
   const [aD,rD,arcD]=['activeTestsList','publishedResultsList','archivedTestsList'].map(id=>document.getElementById(id));
+  const progressCard = document.getElementById('progressCard');
+  const progressGrid = document.getElementById('progressGrid');
+  const progressLatest = document.getElementById('progressLatest');
   aD.innerHTML=rD.innerHTML=arcD.innerHTML='<div class="empty-msg">লোড হচ্ছে...</div>';
+  progressCard.style.display='block';
+  progressGrid.innerHTML='<div class="empty-msg" style="grid-column:1/-1">লোড হচ্ছে...</div>';
+  progressLatest.innerHTML='';
   const b=globalBatches.find(x=>x.id==currentStudent.batch_id);
   const nc=document.getElementById('noticeCard');
   if(b&&b.notice&&b.notice.trim()){
@@ -716,7 +763,7 @@ async function loadStudentDashboard(){
     }else nlWrap.style.display='none';
   }else nc.style.display='none';
   const tests=await api(`tests?batch_id=eq.${currentStudent.batch_id}&order=id.desc`);
-  const lAtts=await api(`attempts?student_id=eq.${currentStudent.id}&is_practice=eq.false`);
+  const lAtts=await api(`attempts?student_id=eq.${currentStudent.id}&is_practice=eq.false&order=id.asc`);
   const aMap={};lAtts.forEach(a=>aMap[a.test_id]=a);
   let aH='',rH='',arcH='';
   tests.forEach(t=>{
@@ -736,7 +783,7 @@ async function loadStudentDashboard(){
           <span>✓</span></div>`;
       }
       if(t.result_published){
-        rH+=`<div class="list-item" onclick="viewLeaderboard(${t.id},'${t.name.replace(/'/g,"\\'").replace(/"/g,'\\"')}')">
+        rH+=`<div class="list-item" onclick="viewLeaderboard(${t.id},'${t.name.replace(/'/g,"\'").replace(/"/g,'\"')}')">
           <div><h4 style="font-size:.97em">${t.name}</h4><small>${done?'📊 আপনার স্কোর: '+done.score:'⚠️ অংশ নেননি'}</small></div>
           <span style="font-size:1.2em">🏆</span></div>`;
       }
@@ -745,6 +792,51 @@ async function loadStudentDashboard(){
   aD.innerHTML=aH||'<div class="empty-msg">⏳ কোনো সচল পরীক্ষা নেই</div>';
   rD.innerHTML=rH||'<div class="empty-msg">📭 কোনো প্রকাশিত ফলাফল নেই</div>';
   arcD.innerHTML=arcH||'<div class="empty-msg">📚 কোনো আর্কাইভ পরীক্ষা নেই</div>';
+
+  if(lAtts.length){
+    const testIds=[...new Set(lAtts.map(a=>a.test_id).filter(Boolean))];
+    const liveTests = testIds.length ? await api(`tests?id=in.(${testIds.join(',')})&select=id,name,total_marks,pass_percent`) : [];
+    const tMap={};
+    liveTests.forEach(t=>tMap[t.id]=t);
+    const totalAttempts=lAtts.length;
+    const totalScore=lAtts.reduce((s,a)=>s+Number(a.score||0),0);
+    const avgScore=totalAttempts ? totalScore/totalAttempts : 0;
+    const maxScore=Math.max(...lAtts.map(a=>Number(a.score||0)));
+    const passCount=lAtts.filter(a=>{
+      const tt=tMap[a.test_id];
+      const mark=((Number(tt?.total_marks)||0) * (Number(tt?.pass_percent)||DEFAULT_PASS_PERCENT)) / 100;
+      return Number(a.score||0) >= mark;
+    }).length;
+    const failCount=totalAttempts-passCount;
+    const latest=lAtts[lAtts.length-1];
+    const latestTest=tMap[latest?.test_id];
+    progressGrid.innerHTML=`
+      <div class="progress-stat"><div class="progress-stat-val">${totalAttempts}</div><div class="progress-stat-label">মোট পরীক্ষা</div></div>
+      <div class="progress-stat"><div class="progress-stat-val">${avgScore.toFixed(2)}</div><div class="progress-stat-label">গড় স্কোর</div></div>
+      <div class="progress-stat"><div class="progress-stat-val">${maxScore}</div><div class="progress-stat-label">সর্বোচ্চ স্কোর</div></div>
+      <div class="progress-stat progress-stat-dual">
+        <div class="dual-wrap">
+          <div><div class="progress-stat-val" style="color:var(--green)">${passCount}</div><div class="progress-stat-label">পাশ</div></div>
+          <div><div class="progress-stat-val" style="color:var(--red)">${failCount}</div><div class="progress-stat-label">ফেল</div></div>
+        </div>
+      </div>`;
+    progressLatest.innerHTML=`<div class="progress-latest">
+      <div class="label">সর্বশেষ পরীক্ষা</div>
+      <div style="font-weight:700;color:var(--gray)">${latestTest?.name || 'পরীক্ষা'} — <span style="color:var(--blue)">${latest?.score ?? 0}</span></div>
+    </div>`;
+  }else{
+    progressGrid.innerHTML=`
+      <div class="progress-stat"><div class="progress-stat-val">0</div><div class="progress-stat-label">মোট পরীক্ষা</div></div>
+      <div class="progress-stat"><div class="progress-stat-val">0</div><div class="progress-stat-label">গড় স্কোর</div></div>
+      <div class="progress-stat"><div class="progress-stat-val">0</div><div class="progress-stat-label">সর্বোচ্চ স্কোর</div></div>
+      <div class="progress-stat progress-stat-dual">
+        <div class="dual-wrap">
+          <div><div class="progress-stat-val" style="color:var(--green)">0</div><div class="progress-stat-label">পাশ</div></div>
+          <div><div class="progress-stat-val" style="color:var(--red)">0</div><div class="progress-stat-label">ফেল</div></div>
+        </div>
+      </div>`;
+    progressLatest.innerHTML=`<div class="progress-latest"><div class="label">সর্বশেষ পরীক্ষা</div><div style="font-weight:700;color:var(--gray)">এখনো কোনো লাইভ পরীক্ষা দেননি</div></div>`;
+  }
 }
 
 async function checkAnnouncement(){
@@ -851,7 +943,7 @@ async function startTest(id){
     const t=await api(`tests?id=eq.${id}`);
     if(!t.length) return showToast('পরীক্ষার তথ্য পাওয়া যায়নি','error');
     currentTest=t[0];
-    OPT_LBL = OPT_LBL_MAP[currentTest.option_lang || 'ar'];
+    OPT_LBL = getOptionLabels(currentTest.option_lang);
     const links=await api(`test_questions?test_id=eq.${id}`);
     if(!links.length) return showToast('এই পরীক্ষায় কোনো প্রশ্ন নেই','error');
     const qIds=links.map(l=>l.question_id).join(',');
@@ -875,6 +967,7 @@ async function startTest(id){
     };
     localStorage.setItem('exam_active', JSON.stringify(examState));
     goTo('screenQuiz',true);
+    enableExamHistoryLock();
     const tb=document.getElementById('timerBox');
     tb.classList.add('show');tb.classList.remove('danger');
     clearInterval(timerInterval);
@@ -889,18 +982,19 @@ async function startTest(id){
 }
 
 function renderQuestions(){
-  const isAr = (currentTest.option_lang || 'ar') === 'ar';
+  const lang = currentTest?.option_lang || 'ar';
+  const isAr = lang === 'ar';
   const qDir = isAr ? 'rtl' : 'ltr';
   const qAlign = isAr ? 'right' : 'left';
   const optDir = isAr ? 'rtl' : 'ltr';
-  const optFlex = isAr ? 'flex-direction:row' : 'flex-direction:row-reverse';
+  const optFlex = isAr ? 'row' : 'row-reverse';
   document.getElementById('quizContainer').innerHTML=currentQuestions.map((q,i)=>
     `<div class="q-card" id="qcard-${q.id}">
       <div class="q-num">প্রশ্ন ${i+1} / ${currentQuestions.length}</div>
       <div class="q-text" style="direction:${qDir};text-align:${qAlign}">${q.question_ar}</div>
       ${['a','b','c','d'].map(o=>
-        `<div class="opt-btn" id="opt-${q.id}-${o}" onclick="selectAns(${q.id},'${o}')" style="direction:${optDir};${optFlex}">
-          <span style="flex:1;direction:${qDir}">${q['opt_'+o]||''}</span>
+        `<div class="opt-btn" id="opt-${q.id}-${o}" onclick="selectAns(${q.id},'${o}')" style="direction:${optDir};flex-direction:${optFlex}">
+          <span style="flex:1;direction:${qDir};text-align:${qAlign}">${q['opt_'+o]||''}</span>
           <span class="opt-letter">${OPT_LBL[o]}</span>
         </div>`).join('')}
     </div>`).join('');
@@ -926,6 +1020,7 @@ function selectAns(qId,opt){
 
 async function submitQuiz(){
   clearInterval(timerInterval);timerInterval=null;
+  disableExamHistoryLock();
   localStorage.removeItem('exam_active');
   document.getElementById('timerBox').classList.remove('show','danger');
   let c=0,w=0,sk=0;
@@ -958,7 +1053,7 @@ async function tryResumeExam(){
     const t = await api(`tests?id=eq.${st.testId}`);
     if(!t.length){ localStorage.removeItem('exam_active'); return false; }
     currentTest = t[0];
-    OPT_LBL = OPT_LBL_MAP[currentTest.option_lang || 'ar'];
+    OPT_LBL = getOptionLabels(currentTest.option_lang);
     isArchiveMode = !!st.isArchiveMode;
     
     const links = await api(`test_questions?test_id=eq.${st.testId}`);
@@ -982,6 +1077,7 @@ async function tryResumeExam(){
         if(el) el.classList.add('selected');
       });
       goTo('screenQuiz', true);
+      enableExamHistoryLock();
       showToast('⏰ সময় শেষ হয়ে গেছে — স্বয়ংক্রিয়ভাবে জমা হচ্ছে', 'error');
       setTimeout(()=>submitQuiz(), 1200);
       return true;
@@ -1008,6 +1104,7 @@ async function tryResumeExam(){
     });
     
     goTo('screenQuiz', true);
+    enableExamHistoryLock();
     const tb = document.getElementById('timerBox');
     tb.classList.add('show');
     if(timeRemaining <= 60) tb.classList.add('danger');
@@ -1062,27 +1159,32 @@ async function saveAttempt(score,c,w,sk){
 // RESULT VIEW WITH PASS/FAIL
 // ══════════════════════════════════════════════════
 function renderResultView(c,w,sk,score){
-  const total=currentTest.total_marks||currentQuestions.length;
-  const pct=total>0?score/total:0;
-  const pMark=(total*PASS_THR).toFixed(1);
+  const total = currentTest.total_marks || currentQuestions.length;
+  const passPercent = getPassPercent(currentTest);
+  const passMark = getPassMark(total, currentTest);
+  const passed = score >= passMark;
+  const pct = total > 0 ? score / total : 0;
   let bannerCls,emoji,headline,subMsg;
   if(isArchiveMode){
     bannerCls='practice';emoji='📚';headline='প্র্যাকটিস সম্পন্ন!';
-    subMsg=`স্কোর ${score}/${total} — নিয়মিত প্র্যাকটিস করুন।`;
-  }else if(pct>=PASS_THR){
+    subMsg=`স্কোর ${score}/${total} — ${passPercent}% পাস মার্ক অনুযায়ী এই পরীক্ষা প্র্যাকটিস মোডে দেখা হচ্ছে।`;
+  }else if(passed){
     bannerCls='pass';emoji='🎉';
     if(pct>=0.80){headline='অসাধারণ! শীর্ষ স্কোর!';subMsg='আপনি অত্যন্ত ভালো প্রস্তুতি নিয়েছেন। এই ধারা ধরে রাখুন!';}
     else if(pct>=0.60){headline='অভিনন্দন! চমৎকার ফলাফল!';subMsg='খুব ভালো করেছেন। আরও একটু পরিশ্রম করলে আরও উপরে উঠবেন।';}
-    else{headline='অভিনন্দন! আপনি পাস করেছেন!';subMsg=`পাস মার্ক (${pMark}) অতিক্রম করেছেন। ধারাবাহিক চর্চা চালিয়ে যান।`;}
-  }else if(pct>=0.30){
+    else{headline='অভিনন্দন! আপনি পাস করেছেন!';subMsg=`${passPercent}% পাস মার্ক (${passMark.toFixed(2)}) অতিক্রম করেছেন। ধারাবাহিক চর্চা চালিয়ে যান।`;}
+  }else if(score >= Math.max(0, passMark - Math.max(1, total * 0.1))){
     bannerCls='close';emoji='💪';headline='হাল ছাড়বেন না!';
-    subMsg=`পাসের জন্য আরও ${(parseFloat(pMark)-score).toFixed(2)} নম্বর দরকার ছিল। আবার চেষ্টা করুন!`;
+    subMsg=`পাসের জন্য আরও ${(passMark-score).toFixed(2)} নম্বর দরকার ছিল। আবার চেষ্টা করুন!`;
   }else{
     bannerCls='fail';emoji='📖';headline='আরও পড়াশোনা দরকার';
     subMsg='হতাশ হবেন না। লেকচার শিট ভালো করে পড়ুন এবং নিয়মিত প্র্যাকটিস করুন।';
   }
 
-  const shareText=`জ্ঞানাঙ্গন পরীক্ষা ফলাফল\nপরীক্ষা: ${currentTest.name}\nস্কোর: ${score}/${total} (${Math.round(pct*100)}%)\n${headline}`;
+  const shareText=`জ্ঞানাঙ্গন পরীক্ষা ফলাফল
+পরীক্ষা: ${currentTest.name}
+স্কোর: ${score}/${total} (${Math.round(pct*100)}%)
+${headline}`;
 
   let html=`
     <div class="result-banner ${bannerCls}">
@@ -1098,20 +1200,23 @@ function renderResultView(c,w,sk,score){
         <div><div class="stat-val" style="color:var(--gold)">${sk}</div><div class="stat-lbl">বাদ</div></div>
         <div><div class="stat-val" style="color:var(--blue)">${Math.round(pct*100)}%</div><div class="stat-lbl">অর্জিত</div></div>
       </div>
-    </div>
-    <div style="margin-bottom:12px;font-weight:700;color:var(--gray)">📋 পর্যালোচনা</div>`;
-
-  currentQuestions.forEach((q,i)=>{
-    const ua=userAnswers[q.id];const isCor=ua===q.correct;
-    const bc=!ua?'var(--gold)':(isCor?'var(--green)':'var(--red)');
-    html+=`<div class="card" style="border-right:5px solid ${bc};margin-bottom:11px">
-      <div class="q-text" style="font-size:1.05em;margin-bottom:10px">${i+1}. ${q.question_ar}</div>
-      <p style="color:var(--green);font-size:.88em;margin-bottom:3px">✓ সঠিক: ${OPT_LBL[q.correct]}) ${q['opt_'+q.correct]}</p>
-      ${ua?`<p style="color:${isCor?'var(--green)':'var(--red)'};font-size:.88em">👉 আপনার: ${OPT_LBL[ua]}) ${q['opt_'+ua]}</p>`
-          :'<p style="color:var(--gold);font-size:.88em">⏭ উত্তর দেননি</p>'}
-      ${q.explanation_bn?`<div style="margin-top:8px;padding:8px;background:var(--green-pale);border-radius:7px;font-size:.83em;color:var(--green)"><b>ব্যাখ্যা:</b> ${q.explanation_bn}</div>`:''}
     </div>`;
-  });
+
+  if(isArchiveMode){
+    html+=`<div class="section-title">📋 প্রশ্ন পর্যালোচনা</div>`;
+    currentQuestions.forEach((q,i)=>{
+      const ua=userAnswers[q.id];
+      const isCor=ua===q.correct;
+      const selectedText = ua ? `${OPT_LBL[ua]} — ${q['opt_'+ua] || ''}` : 'উত্তর দেননি';
+      const correctText = `${OPT_LBL[q.correct]} — ${q['opt_'+q.correct] || ''}`;
+      html+=`<div class="card" style="border-right:5px solid ${isCor?'var(--green)':(ua?'var(--red)':'var(--gold)')};margin-bottom:11px">
+        <div class="q-text" style="font-size:1.05em;margin-bottom:10px">${i+1}. ${q.question_ar}</div>
+        <p style="color:var(--green);font-size:.88em;margin-bottom:4px">✓ সঠিক উত্তর: ${correctText}</p>
+        <p style="color:${ua?(isCor?'var(--green)':'var(--red)'):'var(--gold)'};font-size:.88em;margin-bottom:4px">👉 আপনার উত্তর: ${selectedText}</p>
+        ${q.explanation_bn?`<div style="margin-top:8px;padding:8px;background:var(--green-pale);border-radius:7px;font-size:.83em;color:var(--green)"><b>ব্যাখ্যা:</b> ${q.explanation_bn}</div>`:''}
+      </div>`;
+    });
+  }
 
   html+=`<div style="display:flex;gap:10px;margin-top:8px">
     <button class="btn btn-primary" style="flex:1" onclick="loadStudentDashboard();nav('home')">← ড্যাশবোর্ড</button>
