@@ -295,6 +295,15 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
             <div class="field"><label>পূর্ণমান</label><input type="number" id="bTotalMarks" value="30" min="1"></div>
           </div>
           <div class="field"><label>নেগেটিভ মার্ক (প্রতি ভুলে)</label><input type="number" id="bNegMark" value="0.25" step="0.25" min="0"></div>
+          <div class="field">
+            <label>অপশন লেবেল ভাষা</label>
+            <select id="bOptLang">
+              <option value="ar">আরবি — أ ب ج د</option>
+              <option value="bn">বাংলা — ক খ গ ঘ</option>
+              <option value="en">ইংরেজি — A B C D</option>
+            </select>
+            <p class="help-text">পরীক্ষায় অপশনের পাশে কোন লেবেল দেখাবে তা নির্বাচন করুন।</p>
+          </div>
           <button class="btn btn-primary" onclick="saveTest()">✅ টেস্ট সেভ করুন</button>
         </div>
         <div class="card">
@@ -1080,10 +1089,11 @@ async function saveTest(){
   const dur = parseInt(document.getElementById('bDuration').value) || 25;
   const marks = parseInt(document.getElementById('bTotalMarks').value) || 30;
   const neg = parseFloat(document.getElementById('bNegMark').value) || 0.25;
+  const optLang = document.getElementById('bOptLang').value || 'ar';
   if(!name || !bId) return showToast('নাম ও ব্যাচ নির্বাচন করুন', 'error');
   if(!builderPickedQuestions.length) return showToast('কমপক্ষে ১টি প্রশ্ন সিলেক্ট করুন', 'error');
   try{
-    const t = await api('tests', 'POST', { name, batch_id:parseInt(bId), duration_minutes:dur, total_marks:marks, negative_mark:neg });
+    const t = await api('tests', 'POST', { name, batch_id:parseInt(bId), duration_minutes:dur, total_marks:marks, negative_mark:neg, option_lang:optLang });
     builderTestId = t[0].id;
     await api('test_questions', 'POST', builderPickedQuestions.map(q => ({ test_id:builderTestId, question_id:q.id })));
     showToast('✅ টেস্ট সেভ হয়েছে');
