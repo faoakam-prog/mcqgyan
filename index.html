@@ -627,11 +627,13 @@ function pushH(sid){history.pushState({sid},'',(sid==='screenLogin'?'#login':'#'
 window.onpopstate=e=>{
   const examActive = !!localStorage.getItem('exam_active');
   if(examActive){
-    history.pushState({sid:'screenQuiz', examLock:true}, '', '#screenQuiz');
+    // exam screen-এ না থাকলে dashboard-এ নিয়ে যাও
     if(!document.getElementById('screenQuiz').classList.contains('active')){
-      goTo('screenQuiz', false);
+      goTo('screenDashboard', false);
+      loadStudentDashboard();
     }
-    document.getElementById('backConfirmModal').classList.add('show');
+    // exam screen-এ থাকলে পুনরায় push করো
+    history.pushState({sid:'screenQuiz', examLock:true}, '', '#screenQuiz');
     return;
   }
   if(document.getElementById('screenQuiz').classList.contains('active')){
@@ -789,9 +791,21 @@ async function loadStudentDashboard(){
         <span style="color:var(--blue);font-size:1.2em">🔄</span></div>`;
     }else{
       if(t.is_active&&!done){
-        aH+=`<div class="list-item" onclick="showExamModal(${t.id},false)">
-          <div><h4 style="font-size:.97em">${t.name}</h4><small style="color:var(--gray-mid)">${t.duration_minutes} মি. | ${t.total_marks} নম্বর | নেগেটিভ: ${t.negative_mark}</small></div>
-          <span style="color:var(--green);font-weight:700">▶ শুরু</span></div>`;
+        // exam_active চেক করো — এই test চলছে কিনা
+        let inProgress = false;
+        try{
+          const ea = JSON.parse(localStorage.getItem('exam_active')||'{}');
+          if(ea.testId == t.id) inProgress = true;
+        }catch(_){}
+        if(inProgress){
+          aH+=`<div class="list-item" style="border-left-color:var(--gold)" onclick="confirmSubmitInProgress(${t.id})">
+            <div><h4 style="font-size:.97em">${t.name}</h4><small style="color:var(--gold)">⏳ পরীক্ষা চলছে — ক্লিক করলে জমা হবে</small></div>
+            <span style="color:var(--gold);font-weight:700">⚠️</span></div>`;
+        }else{
+          aH+=`<div class="list-item" onclick="showExamModal(${t.id},false)">
+            <div><h4 style="font-size:.97em">${t.name}</h4><small style="color:var(--gray-mid)">${t.duration_minutes} মি. | ${t.total_marks} নম্বর | নেগেটিভ: ${t.negative_mark}</small></div>
+            <span style="color:var(--green);font-weight:700">▶ শুরু</span></div>`;
+        }
       }else if(t.is_active&&done){
         aH+=`<div class="list-item list-item-done">
           <div><h4 style="font-size:.97em">${t.name}</h4><small>✅ দিয়েছেন | স্কোর: ${done.score}</small></div>
@@ -1016,6 +1030,7 @@ function renderQuestions(){
 }
 
 function selectAns(qId,opt){
+  if(userAnswers[qId]) return; // আগে উত্তর দিলে আর পরিবর্তন নয়
   userAnswers[qId]=opt;
   try{
     const st = JSON.parse(localStorage.getItem('exam_active') || '{}');
@@ -1024,8 +1039,13 @@ function selectAns(qId,opt){
       localStorage.setItem('exam_active', JSON.stringify(st));
     }
   }catch(_){}
-  document.querySelectorAll(`[id^="opt-${qId}"]`).forEach(el=>el.classList.remove('selected'));
-  document.getElementById(`opt-${qId}-${opt}`).classList.add('selected');
+  document.querySelectorAll(`[id^="opt-${qId}"]`).forEach(el=>{
+    el.classList.remove('selected');
+    el.style.pointerEvents='none'; // সব অপশন disable
+    el.style.cursor='default';
+  });
+  const selected = document.getElementById(`opt-${qId}-${opt}`);
+  if(selected) selected.classList.add('selected');
   const ans=Object.keys(userAnswers).length;
   document.getElementById('ansCount').textContent=ans;
   let c=0;currentQuestions.forEach(q=>{if(userAnswers[q.id]===q.correct)c++;});
@@ -1040,6 +1060,19 @@ function closeBackConfirm(){
 async function confirmBackExit(){
   closeBackConfirm();
   await submitQuiz();
+}
+
+async function confirmSubmitInProgress(testId){
+  if(!confirm('পরীক্ষা চলছে। এখন জমা দিলে এখন পর্যন্ত দেওয়া উত্তর গণনা হবে। জমা দেবেন?')) return;
+  // exam_active থেকে state restore করে submit করো
+  const resumed = await tryResumeExam();
+  if(resumed){
+    await submitQuiz();
+  }else{
+    // resume না হলে খালি submit করো
+    localStorage.removeItem('exam_active');
+    loadStudentDashboard();
+  }
 }
 
 async function submitQuiz(){
@@ -1120,11 +1153,15 @@ async function tryResumeExam(){
     document.getElementById('quizFill').style.width = (ansCount/currentQuestions.length*100)+'%';
     
     renderQuestions();
-    // আগের উত্তরগুলো হাইলাইট
+    // আগের উত্তরগুলো হাইলাইট ও lock করো
     Object.keys(userAnswers).forEach(qid=>{
       const opt = userAnswers[qid];
       const el = document.getElementById(`opt-${qid}-${opt}`);
       if(el) el.classList.add('selected');
+      document.querySelectorAll(`[id^="opt-${qid}"]`).forEach(btn=>{
+        btn.style.pointerEvents='none';
+        btn.style.cursor='default';
+      });
     });
     
     goTo('screenQuiz', true);
