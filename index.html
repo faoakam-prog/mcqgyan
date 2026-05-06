@@ -357,7 +357,12 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
 const DB_URL  = 'https://vzctytzhcjlcrtpljpxo.supabase.co/rest/v1/';
 const DB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6Y3R5dHpoY2psY3J0cGxqcHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1Nzc4NzksImV4cCI6MjA5MzE1Mzg3OX0.B8jKTJDXwEpyST9-J5ct_-GIp27Z2-yLjMENdAysdXQ';
 const ST_URL  = 'https://vzctytzhcjlcrtpljpxo.supabase.co/storage/v1/';
-const OPT_LBL = {a:'أ',b:'ب',c:'ج',d:'د'};
+const OPT_LBL_MAP = {
+  ar: {a:'أ', b:'ب', c:'ج', d:'د'},
+  bn: {a:'ক', b:'খ', c:'গ', d:'ঘ'},
+  en: {a:'A', b:'B', c:'C', d:'D'}
+};
+let OPT_LBL = OPT_LBL_MAP['ar'];
 const PASS_THR = 0.40;
 
 let currentStudent=null, currentTest=null, currentQuestions=[], userAnswers={};
@@ -846,6 +851,7 @@ async function startTest(id){
     const t=await api(`tests?id=eq.${id}`);
     if(!t.length) return showToast('পরীক্ষার তথ্য পাওয়া যায়নি','error');
     currentTest=t[0];
+    OPT_LBL = OPT_LBL_MAP[currentTest.option_lang || 'ar'];
     const links=await api(`test_questions?test_id=eq.${id}`);
     if(!links.length) return showToast('এই পরীক্ষায় কোনো প্রশ্ন নেই','error');
     const qIds=links.map(l=>l.question_id).join(',');
@@ -883,13 +889,18 @@ async function startTest(id){
 }
 
 function renderQuestions(){
+  const isAr = (currentTest.option_lang || 'ar') === 'ar';
+  const qDir = isAr ? 'rtl' : 'ltr';
+  const qAlign = isAr ? 'right' : 'left';
+  const optDir = isAr ? 'rtl' : 'ltr';
+  const optFlex = isAr ? 'flex-direction:row' : 'flex-direction:row-reverse';
   document.getElementById('quizContainer').innerHTML=currentQuestions.map((q,i)=>
     `<div class="q-card" id="qcard-${q.id}">
       <div class="q-num">প্রশ্ন ${i+1} / ${currentQuestions.length}</div>
-      <div class="q-text">${q.question_ar}</div>
+      <div class="q-text" style="direction:${qDir};text-align:${qAlign}">${q.question_ar}</div>
       ${['a','b','c','d'].map(o=>
-        `<div class="opt-btn" id="opt-${q.id}-${o}" onclick="selectAns(${q.id},'${o}')">
-          <span style="flex:1;direction:rtl">${q['opt_'+o]||''}</span>
+        `<div class="opt-btn" id="opt-${q.id}-${o}" onclick="selectAns(${q.id},'${o}')" style="direction:${optDir};${optFlex}">
+          <span style="flex:1;direction:${qDir}">${q['opt_'+o]||''}</span>
           <span class="opt-letter">${OPT_LBL[o]}</span>
         </div>`).join('')}
     </div>`).join('');
@@ -947,6 +958,7 @@ async function tryResumeExam(){
     const t = await api(`tests?id=eq.${st.testId}`);
     if(!t.length){ localStorage.removeItem('exam_active'); return false; }
     currentTest = t[0];
+    OPT_LBL = OPT_LBL_MAP[currentTest.option_lang || 'ar'];
     isArchiveMode = !!st.isArchiveMode;
     
     const links = await api(`test_questions?test_id=eq.${st.testId}`);
