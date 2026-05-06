@@ -294,11 +294,12 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
             <div class="field"><label>সময় (মিনিট)</label><input type="number" id="bDuration" value="25" min="5"></div>
             <div class="field"><label>পূর্ণমান</label><input type="number" id="bTotalMarks" value="30" min="1"></div>
           </div>
+          <div class="field"><label>পাশ নম্বর (%)</label><input type="number" id="bPassPercent" value="40" min="1" max="100"></div>
           <div class="form-row">
             <div class="field"><label>নেগেটিভ মার্ক (প্রতি ভুলে)</label><input type="number" id="bNegMark" value="0.25" step="0.25" min="0"></div>
             <div class="field">
               <label>অপশন লেবেল ভাষা</label>
-              <select id="bOptLang">
+              <select id="bOptLang" onchange="renderBuilderList()">
                 <option value="ar">আরবি — أ ب ج د</option>
                 <option value="bn">বাংলা — ক খ গ ঘ</option>
                 <option value="en">ইংরেজি — A B C D</option>
@@ -338,12 +339,17 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
             <div class="field"><label>সার্চ</label><input type="text" id="qSearch" placeholder="প্রশ্ন / অপশন / উত্তর খুঁজুন" oninput="loadQuestions()"></div>
             <div class="field"><label>CSV ফাইল</label><input type="file" id="qbCsvFile" accept=".csv"></div>
           </div>
+          <div class="field"><label>টেস্ট ফিল্টার</label><select id="qTestFilter" onchange="loadQuestions()"><option value="">সব টেস্ট</option></select></div>
           <button class="btn btn-primary" onclick="uploadCSV('qbCsvFile')">⬆ CSV আপলোড</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+            <button class="btn btn-small btn-gold" style="width:auto" onclick="exportQuestionsCSV()">CSV Export</button>
+            <button class="btn btn-small btn-danger" style="width:auto" onclick="deleteSelectedQuestions()">নির্বাচিত মুছুন</button>
+          </div>
         </div>
         <div style="overflow-x:auto">
           <table>
-            <thead><tr><th>#</th><th>প্রশ্ন</th><th>সঠিক উত্তর</th><th>অ্যাকশন</th></tr></thead>
-            <tbody id="adminQBody"><tr><td colspan="4" class="empty-msg">লোড হচ্ছে...</td></tr></tbody>
+            <thead><tr><th><input type="checkbox" id="qSelectAll" onchange="toggleAllQuestions(this.checked)"></th><th>#</th><th>প্রশ্ন</th><th>সঠিক উত্তর</th><th>অ্যাকশন</th></tr></thead>
+            <tbody id="adminQBody"><tr><td colspan="5" class="empty-msg">লোড হচ্ছে...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -379,8 +385,8 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
         </div>
         <div style="overflow-x:auto">
           <table>
-            <thead><tr><th>#</th><th>নাম</th><th>মোবাইল</th><th>ব্যাচ</th></tr></thead>
-            <tbody id="adminStBody"><tr><td colspan="4" class="empty-msg">লোড হচ্ছে...</td></tr></tbody>
+            <thead><tr><th>#</th><th>নাম</th><th>মোবাইল</th><th>ব্যাচ</th><th>অ্যাকশন</th></tr></thead>
+            <tbody id="adminStBody"><tr><td colspan="5" class="empty-msg">লোড হচ্ছে...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -455,6 +461,57 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
   </div>
 </div>
 
+<div class="modal-overlay" id="studentEditModal" onclick="closeStudentEditModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title">✏️ স্টুডেন্ট এডিট</div>
+    <input type="hidden" id="studentEditId">
+    <div class="field">
+      <label>নাম</label>
+      <input type="text" id="studentEditName" placeholder="নাম">
+    </div>
+    <div class="field">
+      <label>মোবাইল</label>
+      <input type="text" id="studentEditPhone" placeholder="মোবাইল">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeStudentEditModal()">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveStudentEdit()">সেভ</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="questionEditModal" onclick="closeQuestionEditModal()">
+  <div class="modal-box" style="max-width:640px" onclick="event.stopPropagation()">
+    <div class="modal-title">✏️ প্রশ্ন এডিট</div>
+    <input type="hidden" id="questionEditId">
+    <div class="field"><label>প্রশ্ন</label><textarea id="questionEditAr" rows="4"></textarea></div>
+    <div class="form-row">
+      <div class="field"><label>অপশন A</label><input type="text" id="questionEditA"></div>
+      <div class="field"><label>অপশন B</label><input type="text" id="questionEditB"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>অপশন C</label><input type="text" id="questionEditC"></div>
+      <div class="field"><label>অপশন D</label><input type="text" id="questionEditD"></div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>সঠিক উত্তর</label>
+        <select id="questionEditCorrect">
+          <option value="a">A</option>
+          <option value="b">B</option>
+          <option value="c">C</option>
+          <option value="d">D</option>
+        </select>
+      </div>
+      <div class="field"><label>ব্যাখ্যা (বাংলা)</label><textarea id="questionEditExplanation" rows="3"></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeQuestionEditModal()">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveQuestionEdit()">সেভ</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -471,6 +528,9 @@ let builderPickedQuestions = [];
 let builderTestId = null;
 let builderQuestionCount = 0;
 let builderUploadedQuestions = []; // CSV থেকে আপলোড হওয়া প্রশ্নের তালিকা
+let currentQuestionRows = [];
+let selectedQuestionIds = new Set();
+let allTestsCache = [];
 let lastResultData = { title:'', subtitle:'', rows:[] };
 
 async function api(endpoint, method='GET', body=null){
@@ -533,6 +593,56 @@ function showToast(msg, type='success'){
   t.className = `toast ${type} show`;
   clearTimeout(showToast._tm);
   showToast._tm = setTimeout(() => t.className = 'toast', 3200);
+}
+
+function optionLetters(lang='ar'){
+  if(lang === 'bn') return ['ক','খ','গ','ঘ'];
+  if(lang === 'en') return ['A','B','C','D'];
+  return ['أ','ب','ج','د'];
+}
+
+function csvEscape(v){
+  const s = String(v ?? '');
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+}
+
+function downloadCSV(filename, rows, headers){
+  const csv = [headers.join(',')].concat(rows.map(r => headers.map(h => csvEscape(r[h])).join(','))).join('\n');
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function normalizePhone(v){
+  return String(v ?? '').replace(/\D/g, '');
+}
+
+function dedupeStudents(rows){
+  const seen = new Set();
+  return (rows || []).filter(s => {
+    const phone = normalizePhone(s.phone);
+    const name = String(s.name || '').trim().toLowerCase();
+    const key = phone ? `${s.batch_id || ''}|phone:${phone}` : `${s.batch_id || ''}|name:${name}`;
+    if(seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function openModal(id){
+  const el = document.getElementById(id);
+  if(el) el.classList.add('show');
+}
+
+function closeModal(id){
+  const el = document.getElementById(id);
+  if(el) el.classList.remove('show');
 }
 
 function parseCSV(text){
@@ -612,15 +722,16 @@ async function generateQuestionPDF(id){
     if(!links.length) return showToast('প্রশ্ন নেই', 'error');
     const qIds = links.map(l => l.question_id).join(',');
     const questions = await api(`questions?id=in.(${qIds})`);
+    const labels = optionLetters(test.option_lang || 'ar');
     let questionsHtml = '';
     questions.forEach((q, i) => {
       questionsHtml += `<div class="pq-card">
         <b>${i+1}. ${q.question_ar || ''}</b>
         <div class="pq-opts">
-          <div>أ) ${q.opt_a || ''}</div>
-          <div>ب) ${q.opt_b || ''}</div>
-          <div>ج) ${q.opt_c || ''}</div>
-          <div>د) ${q.opt_d || ''}</div>
+          <div>${labels[0]}) ${q.opt_a || ''}</div>
+          <div>${labels[1]}) ${q.opt_b || ''}</div>
+          <div>${labels[2]}) ${q.opt_c || ''}</div>
+          <div>${labels[3]}) ${q.opt_d || ''}</div>
         </div>
       </div>`;
     });
@@ -799,6 +910,7 @@ async function deleteTest(id){
   await api(`test_questions?test_id=eq.${id}`, 'DELETE');
   await api(`attempts?test_id=eq.${id}`, 'DELETE');
   await api(`tests?id=eq.${id}`, 'DELETE');
+  allTestsCache = [];
   showToast('✅ পরীক্ষা মুছে ফেলা হয়েছে');
   loadAdminDashboard();
 }
@@ -987,9 +1099,6 @@ async function confirmDeleteBatch(){
     // ৬. সব test_questions delete করো (test_id দিয়ে)
     for(const t of tests){
       const attempts = await api(`attempts?test_id=eq.${t.id}&select=id`);
-      for(const a of attempts){
-        await api(`answers?attempt_id=eq.${a.id}`, 'DELETE');
-      }
       await api(`attempts?test_id=eq.${t.id}`, 'DELETE');
       await api(`test_questions?test_id=eq.${t.id}`, 'DELETE');
     }
@@ -999,9 +1108,6 @@ async function confirmDeleteBatch(){
     // ৯. সব attempts delete করো (student_id দিয়ে)
     for(const s of students){
       const attempts = await api(`attempts?student_id=eq.${s.id}&select=id`);
-      for(const a of attempts){
-        await api(`answers?attempt_id=eq.${a.id}`, 'DELETE');
-      }
       await api(`attempts?student_id=eq.${s.id}`, 'DELETE');
     }
 
@@ -1075,6 +1181,7 @@ function uploadCSVToBuilder(){
 
 function renderBuilderList(){
   const q = (document.getElementById('builderSearch')?.value || '').toLowerCase();
+  const labels = optionLetters(document.getElementById('bOptLang')?.value || 'ar');
   const list = builderUploadedQuestions.filter(x =>
     !q || [x.question_ar, x.opt_a, x.opt_b, x.opt_c, x.opt_d].join(' ').toLowerCase().includes(q)
   );
@@ -1084,7 +1191,7 @@ function renderBuilderList(){
         <input type="checkbox" id="bq-${i}" ${x._selected===false?'':'checked'} onchange="toggleBuilderQ(${builderUploadedQuestions.indexOf(x)})" style="margin-top:4px;width:16px;height:16px;cursor:pointer;flex-shrink:0">
         <label for="bq-${i}" style="flex:1;cursor:pointer">
           <div style="font-size:.95em;font-weight:600;margin-bottom:3px">${x.question_ar || ''}</div>
-          <div style="font-size:.8em;color:var(--gray-mid)">أ) ${x.opt_a||''} | ب) ${x.opt_b||''} | ج) ${x.opt_c||''} | د) ${x.opt_d||''}</div>
+          <div style="font-size:.8em;color:var(--gray-mid)">${labels[0]}) ${x.opt_a||''} | ${labels[1]}) ${x.opt_b||''} | ${labels[2]}) ${x.opt_c||''} | ${labels[3]}) ${x.opt_d||''}</div>
           <div style="font-size:.78em;color:var(--green);margin-top:2px">✓ সঠিক: ${(x.correct||'').toUpperCase()}</div>
         </label>
         <button class="btn btn-small btn-danger" onclick="removeBuilderQ(${builderUploadedQuestions.indexOf(x)})" style="flex-shrink:0">✕</button>
@@ -1124,20 +1231,35 @@ function clearBuilderList(){
   document.getElementById('builderUploadStatus').style.display = 'none';
 }
 
+async function refreshQuestionFilterOptions(selected=''){
+  try{
+    if(!allTestsCache.length){
+      allTestsCache = await api('tests?select=id,name&order=id.desc');
+    }
+    const el = document.getElementById('qTestFilter');
+    if(el){
+      const current = selected || el.value || '';
+      el.innerHTML = '<option value="">সব টেস্ট</option>' + allTestsCache.map(t => `<option value="${t.id}">${t.name || ('টেস্ট #' + t.id)}</option>`).join('');
+      el.value = current;
+    }
+  }catch(_){}
+}
+
 async function saveTestFromBuilder(){
   const name = document.getElementById('bTestName').value.trim();
   const bId = document.getElementById('bBatchSelect').value;
   const dur = parseInt(document.getElementById('bDuration').value) || 25;
   const marks = parseInt(document.getElementById('bTotalMarks').value) || 30;
+  const passPercentRaw = parseInt(document.getElementById('bPassPercent').value);
+  const passPercent = Number.isFinite(passPercentRaw) ? Math.max(1, Math.min(100, passPercentRaw)) : 40;
   const neg = parseFloat(document.getElementById('bNegMark').value) || 0.25;
-  const optLang = document.getElementById('bOptLang').value || 'ar';
+  const optLang = ['ar','bn','en'].includes(document.getElementById('bOptLang').value) ? document.getElementById('bOptLang').value : 'ar';
   if(!name) return showToast('পরীক্ষার নাম লিখুন', 'error');
   if(!bId) return showToast('ব্যাচ নির্বাচন করুন', 'error');
   const selectedQs = builderUploadedQuestions.filter(q => q._selected !== false);
   if(!selectedQs.length) return showToast('কমপক্ষে ১টি প্রশ্ন নির্বাচন করুন', 'error');
   try{
     showToast('⏳ টেস্ট তৈরি হচ্ছে...', 'info');
-    // ১. প্রশ্নগুলো DB তে সেভ করো
     const savedQs = await api('questions', 'POST', selectedQs.map(q => ({
       question_ar: q.question_ar,
       opt_a: q.opt_a,
@@ -1147,23 +1269,30 @@ async function saveTestFromBuilder(){
       correct: q.correct,
       explanation_bn: q.explanation_bn || ''
     })));
-    // ২. টেস্ট তৈরি করো
-    const t = await api('tests', 'POST', { name, batch_id:parseInt(bId), duration_minutes:dur, total_marks:marks, negative_mark:neg, option_lang:optLang });
+    const t = await api('tests', 'POST', {
+      name,
+      batch_id: parseInt(bId),
+      duration_minutes: dur,
+      total_marks: marks,
+      negative_mark: neg,
+      pass_percent: passPercent,
+      option_lang: optLang
+    });
     const testId = t[0].id;
-    // ৩. test_questions লিংক করো
     await api('test_questions', 'POST', savedQs.map(q => ({ test_id:testId, question_id:q.id })));
     showToast(`✅ টেস্ট তৈরি হয়েছে! ${selectedQs.length}টি প্রশ্ন যোগ হয়েছে`);
-    // রিসেট
     builderUploadedQuestions = [];
     document.getElementById('bTestName').value = '';
     document.getElementById('builderUploadStatus').style.display = 'none';
+    document.getElementById('bPassPercent').value = '40';
     renderBuilderList();
+    allTestsCache = [];
     loadAdminDashboard();
     switchAdminTab('dash', document.querySelector('.sidebar .nav-item'));
   }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
 }
 
-// পুরাতন function গুলো (প্রশ্ন ব্যাংক ট্যাবের জন্য রাখা হয়েছে)
+// পুরাতন function গুলো (প্রশ্ন ব্যাংক ট্যাবের জন্য রাখা হয়েছে) (প্রশ্ন ব্যাংক ট্যাবের জন্য রাখা হয়েছে)
 function renderBuilder(){ }
 async function loadBuilder(){
   if(document.getElementById('builderAvailable')) renderBuilderList();
@@ -1174,15 +1303,108 @@ async function saveTest(){ await saveTestFromBuilder(); }
 
 async function loadQuestions(){
   const q = (document.getElementById('qSearch')?.value || '').toLowerCase();
-  const data = await api('questions?order=id.desc');
+  const selectedTestId = document.getElementById('qTestFilter')?.value || '';
+  await refreshQuestionFilterOptions(selectedTestId);
+
+  let data = [];
+  if(selectedTestId){
+    const links = await api(`test_questions?test_id=eq.${selectedTestId}&select=question_id`);
+    const ids = [...new Set((links || []).map(x => x.question_id).filter(Boolean))];
+    data = ids.length ? await api(`questions?id=in.(${ids.join(',')})&order=id.desc`) : [];
+  }else{
+    data = await api('questions?order=id.desc');
+  }
+
+  data = (data || []).sort((a,b) => (b.id || 0) - (a.id || 0));
   const rows = data.filter(x => !q || [x.question_ar, x.opt_a, x.opt_b, x.opt_c, x.opt_d, x.correct].join(' ').toLowerCase().includes(q));
+  currentQuestionRows = rows;
+  const allSelected = rows.length > 0 && rows.every(x => selectedQuestionIds.has(x.id));
+  const selAll = document.getElementById('qSelectAll');
+  if(selAll) selAll.checked = allSelected;
+
   document.getElementById('adminQBody').innerHTML = rows.length ? rows.map((x, i) => `<tr>
+    <td><input type="checkbox" ${selectedQuestionIds.has(x.id) ? 'checked' : ''} onchange="toggleQuestionSelect(${x.id}, this.checked)" style="width:16px;height:16px;cursor:pointer"></td>
     <td>${i + 1}</td>
     <td style="max-width:540px">${x.question_ar || ''}<div class="help-text">A) ${x.opt_a || ''} | B) ${x.opt_b || ''} | C) ${x.opt_c || ''} | D) ${x.opt_d || ''}</div></td>
     <td><span class="badge badge-b">${(x.correct || '').toUpperCase()}</span></td>
-    <td><button class="btn btn-small btn-danger" onclick="deleteQuestion(${x.id})">🗑</button></td>
-  </tr>`).join('') : '<tr><td colspan="4" class="empty-msg">কোনো প্রশ্ন নেই</td></tr>';
+    <td>
+      <button class="btn btn-small btn-gold" onclick="openQuestionEdit(${x.id})">✏️</button>
+      <button class="btn btn-small btn-danger" onclick="deleteQuestion(${x.id})">🗑</button>
+    </td>
+  </tr>`).join('') : '<tr><td colspan="5" class="empty-msg">কোনো প্রশ্ন নেই</td></tr>';
   if(document.getElementById('builderAvailable')) builderQuestionPool = data;
+}
+
+function toggleQuestionSelect(id, checked){
+  if(checked) selectedQuestionIds.add(id);
+  else selectedQuestionIds.delete(id);
+}
+
+function toggleAllQuestions(checked){
+  currentQuestionRows.forEach(q => {
+    if(checked) selectedQuestionIds.add(q.id);
+    else selectedQuestionIds.delete(q.id);
+  });
+  loadQuestions();
+}
+
+async function deleteSelectedQuestions(){
+  const ids = [...selectedQuestionIds];
+  if(!ids.length) return showToast('কোনো প্রশ্ন নির্বাচন করা নেই', 'error');
+  if(!confirm(`নির্বাচিত ${ids.length}টি প্রশ্ন মুছবেন?`)) return;
+  try{
+    await api(`test_questions?question_id=in.(${ids.join(',')})`, 'DELETE');
+    await api(`questions?id=in.(${ids.join(',')})`, 'DELETE');
+    ids.forEach(id => selectedQuestionIds.delete(id));
+    showToast('✅ নির্বাচিত প্রশ্ন মুছে ফেলা হয়েছে');
+    loadQuestions();
+    loadBuilder();
+  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
+}
+
+function exportQuestionsCSV(){
+  if(!currentQuestionRows.length) return showToast('রপ্তানি করার মতো প্রশ্ন নেই', 'error');
+  downloadCSV('questions.csv', currentQuestionRows, ['question_ar','opt_a','opt_b','opt_c','opt_d','correct','explanation_bn']);
+}
+
+async function openQuestionEdit(id){
+  const q = currentQuestionRows.find(x => x.id == id) || (await api(`questions?id=eq.${id}`))?.[0];
+  if(!q) return showToast('প্রশ্ন পাওয়া যায়নি', 'error');
+  document.getElementById('questionEditId').value = q.id;
+  document.getElementById('questionEditAr').value = q.question_ar || '';
+  document.getElementById('questionEditA').value = q.opt_a || '';
+  document.getElementById('questionEditB').value = q.opt_b || '';
+  document.getElementById('questionEditC').value = q.opt_c || '';
+  document.getElementById('questionEditD').value = q.opt_d || '';
+  document.getElementById('questionEditCorrect').value = (q.correct || 'a').toLowerCase();
+  document.getElementById('questionEditExplanation').value = q.explanation_bn || '';
+  openModal('questionEditModal');
+}
+
+function closeQuestionEditModal(){
+  closeModal('questionEditModal');
+}
+
+async function saveQuestionEdit(){
+  const id = parseInt(document.getElementById('questionEditId').value);
+  if(!id) return;
+  const payload = {
+    question_ar: document.getElementById('questionEditAr').value.trim(),
+    opt_a: document.getElementById('questionEditA').value.trim(),
+    opt_b: document.getElementById('questionEditB').value.trim(),
+    opt_c: document.getElementById('questionEditC').value.trim(),
+    opt_d: document.getElementById('questionEditD').value.trim(),
+    correct: document.getElementById('questionEditCorrect').value.trim().toLowerCase(),
+    explanation_bn: document.getElementById('questionEditExplanation').value.trim()
+  };
+  if(!payload.question_ar) return showToast('প্রশ্ন লিখুন', 'error');
+  try{
+    await api(`questions?id=eq.${id}`, 'PATCH', payload);
+    showToast('✅ প্রশ্ন আপডেট হয়েছে');
+    closeQuestionEditModal();
+    loadQuestions();
+    loadBuilder();
+  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
 }
 
 async function deleteQuestion(id){
@@ -1190,6 +1412,7 @@ async function deleteQuestion(id){
   try{
     await api(`test_questions?question_id=eq.${id}`, 'DELETE');
     await api(`questions?id=eq.${id}`, 'DELETE');
+    selectedQuestionIds.delete(id);
     showToast('✅ প্রশ্ন মুছে ফেলা হয়েছে');
     loadQuestions();
     loadBuilder();
@@ -1244,13 +1467,14 @@ async function loadAdminResults(){
 async function loadAdminStudents(){
   const bId = document.getElementById('stuFilterBatch').value;
   const f = bId ? `batch_id=eq.${bId}&` : '';
-  allStudents = await api(`students?${f}order=id.desc&select=*,batches(name)`);
+  const raw = await api(`students?${f}order=id.desc&select=*,batches(name)`);
+  allStudents = dedupeStudents(raw);
   renderStudentTable(allStudents);
 }
 
 function filterStudents(){
   const q = document.getElementById('stuSearch').value.toLowerCase();
-  renderStudentTable(allStudents.filter(s => s.name?.toLowerCase().includes(q) || s.phone?.includes(q)));
+  renderStudentTable(allStudents.filter(s => (s.name || '').toLowerCase().includes(q) || (s.phone || '').includes(q)));
 }
 
 function renderStudentTable(sts){
@@ -1258,7 +1482,48 @@ function renderStudentTable(sts){
       <td>${i+1}</td><td>${s.name || ''}</td>
       <td style="font-family:monospace">${s.phone || '—'}</td>
       <td>${s.batches?.name || '—'}</td>
-    </tr>`).join('') : '<tr><td colspan="4" class="empty-msg">কোনো শিক্ষার্থী নেই</td></tr>';
+      <td style="white-space:nowrap">
+        <button class="btn btn-small btn-gold" onclick="openStudentEdit(${s.id})">✏️</button>
+        <button class="btn btn-small btn-danger" onclick="deleteStudent(${s.id})">🗑</button>
+      </td>
+    </tr>`).join('') : '<tr><td colspan="5" class="empty-msg">কোনো শিক্ষার্থী নেই</td></tr>';
+}
+
+async function openStudentEdit(id){
+  const s = allStudents.find(x => x.id == id) || (await api(`students?id=eq.${id}`))?.[0];
+  if(!s) return showToast('শিক্ষার্থী পাওয়া যায়নি', 'error');
+  document.getElementById('studentEditId').value = s.id;
+  document.getElementById('studentEditName').value = s.name || '';
+  document.getElementById('studentEditPhone').value = s.phone || '';
+  openModal('studentEditModal');
+}
+
+function closeStudentEditModal(){
+  closeModal('studentEditModal');
+}
+
+async function saveStudentEdit(){
+  const id = parseInt(document.getElementById('studentEditId').value);
+  const name = document.getElementById('studentEditName').value.trim();
+  const phone = document.getElementById('studentEditPhone').value.trim();
+  if(!id) return;
+  if(!name || !phone) return showToast('নাম ও মোবাইল দিন', 'error');
+  try{
+    await api(`students?id=eq.${id}`, 'PATCH', { name, phone });
+    showToast('✅ শিক্ষার্থী আপডেট হয়েছে');
+    closeStudentEditModal();
+    loadAdminStudents();
+  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
+}
+
+async function deleteStudent(id){
+  if(!confirm('এই শিক্ষার্থীকে মুছবেন?')) return;
+  try{
+    await api(`attempts?student_id=eq.${id}`, 'DELETE');
+    await api(`students?id=eq.${id}`, 'DELETE');
+    showToast('✅ শিক্ষার্থী মুছে ফেলা হয়েছে');
+    loadAdminStudents();
+  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
 }
 
 async function loadAdminSettings(){
