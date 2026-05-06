@@ -207,6 +207,47 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
 </div>
 
 <!-- EXAM CONFIRM MODAL -->
+<!-- BACK BUTTON CONFIRM -->
+<div class="modal-overlay" id="backConfirmModal">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title">⚠️ পরীক্ষা থেকে বের হবেন?</div>
+    <p style="font-size:.9em;color:var(--gray);margin-bottom:18px;line-height:1.7">
+      বের হলে এখন পর্যন্ত দেওয়া উত্তর <b>স্বয়ংক্রিয়ভাবে জমা</b> হয়ে যাবে।
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeBackConfirm()">না, পরীক্ষা চালিয়ে যাই</button>
+      <button class="btn btn-danger" onclick="confirmBackExit()">হ্যাঁ, জমা দিয়ে বের হই</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUBMIT CONFIRM -->
+<div class="modal-overlay" id="submitConfirmModal">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title">✅ পরীক্ষা জমা দেবেন?</div>
+    <p style="font-size:.9em;color:var(--gray);margin-bottom:6px;line-height:1.7">
+      জমা দিলে আর পরিবর্তন করা যাবে না।
+    </p>
+    <p id="submitConfirmStats" style="font-size:.88em;color:var(--green);font-weight:700;margin-bottom:18px"></p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeSubmitConfirm()">ফিরে যাই</button>
+      <button class="btn btn-primary" onclick="doSubmitQuiz()">হ্যাঁ, জমা দিন</button>
+    </div>
+  </div>
+</div>
+
+<!-- TAB SWITCH WARNING -->
+<div class="modal-overlay" id="tabWarnModal">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title" style="color:var(--red)">⚠️ সতর্কতা!</div>
+    <p style="font-size:.9em;color:var(--gray);margin-bottom:18px;line-height:1.7">
+      পরীক্ষা চলাকালীন অন্য ট্যাব বা অ্যাপে গেছেন। এটি অসদাচরণ হিসেবে গণ্য হতে পারে।<br><br>
+      <b>পরীক্ষা চালিয়ে যান।</b>
+    </p>
+    <button class="btn btn-primary" onclick="closeTabWarn()">ঠিক আছে, চালিয়ে যাচ্ছি</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="examModal">
   <div class="modal-box">
     <div class="modal-title">📋 পরীক্ষা শুরু করবেন?</div>
@@ -340,7 +381,7 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
       </div>
     </div>
     <div id="quizContainer"></div>
-    <button class="btn btn-gold" style="position:sticky;bottom:16px;box-shadow:0 4px 20px rgba(0,0,0,.25)" onclick="submitQuiz()">পরীক্ষা জমা দিন ✓</button>
+    <button class="btn btn-gold" style="position:sticky;bottom:16px;box-shadow:0 4px 20px rgba(0,0,0,.25)" onclick="showSubmitConfirm()">পরীক্ষা জমা দিন ✓</button>
     <div style="height:20px"></div>
   </div>
 </div>
@@ -598,13 +639,6 @@ function loadSession(){
 }
 function clearSession(){localStorage.removeItem('gya_stu');sessionStorage.removeItem('gya_stu');}
 
-window.addEventListener('beforeunload', function(e){
-  if(localStorage.getItem('exam_active')){
-    e.preventDefault();
-    e.returnValue = 'পরীক্ষা চলছে! পেইজ ছাড়লে ডেটা থাকলেও কিছু প্রশ্নের উত্তর হারাতে পারে।';
-    return e.returnValue;
-  }
-});
 
 // ══════════════════════════════════════════════════
 // NAVIGATION
@@ -614,13 +648,11 @@ function pushH(sid){history.pushState({sid},'',(sid==='screenLogin'?'#login':'#'
 window.onpopstate=e=>{
   const examActive = !!localStorage.getItem('exam_active');
   if(examActive){
-    // exam screen-এ না থাকলে dashboard-এ নিয়ে যাও
-    if(!document.getElementById('screenQuiz').classList.contains('active')){
-      goTo('screenDashboard', false);
-      loadStudentDashboard();
-    }
-    // exam screen-এ থাকলে পুনরায় push করো
     history.pushState({sid:'screenQuiz', examLock:true}, '', '#screenQuiz');
+    if(!document.getElementById('screenQuiz').classList.contains('active')){
+      goTo('screenQuiz', false);
+    }
+    document.getElementById('backConfirmModal').classList.add('show');
     return;
   }
   if(document.getElementById('screenQuiz').classList.contains('active')){
@@ -1052,6 +1084,45 @@ async function confirmSubmitInProgress(testId){
     loadStudentDashboard();
   }
 }
+
+// ── Back confirm ──
+function closeBackConfirm(){
+  document.getElementById('backConfirmModal').classList.remove('show');
+}
+async function confirmBackExit(){
+  closeBackConfirm();
+  await doSubmitQuiz();
+}
+
+// ── Submit confirm ──
+function showSubmitConfirm(){
+  const total = currentQuestions.length;
+  const answered = Object.keys(userAnswers).length;
+  const skipped = total - answered;
+  document.getElementById('submitConfirmStats').textContent =
+    `উত্তর দিয়েছেন: ${answered}টি | বাদ দিয়েছেন: ${skipped}টি`;
+  document.getElementById('submitConfirmModal').classList.add('show');
+}
+function closeSubmitConfirm(){
+  document.getElementById('submitConfirmModal').classList.remove('show');
+}
+async function doSubmitQuiz(){
+  closeSubmitConfirm();
+  await submitQuiz();
+}
+
+// ── Tab/visibility warning ──
+function closeTabWarn(){
+  document.getElementById('tabWarnModal').classList.remove('show');
+}
+document.addEventListener('visibilitychange', function(){
+  if(document.hidden && localStorage.getItem('exam_active')){
+    // ট্যাব/স্ক্রিন ছেড়ে গেছে
+  } else if(!document.hidden && localStorage.getItem('exam_active')){
+    // ফিরে এসেছে — warning দেখাও
+    document.getElementById('tabWarnModal').classList.add('show');
+  }
+});
 
 async function submitQuiz(){
   clearInterval(timerInterval);timerInterval=null;
