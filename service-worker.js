@@ -1,4 +1,4 @@
-const CACHE = 'gyanangon-v7';
+const CACHE = 'gyanangon-v8';
 const ASSETS = [
   '/',
   '/index.html',
