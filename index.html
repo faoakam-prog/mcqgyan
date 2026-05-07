@@ -35,6 +35,10 @@ body{font-family:'Noto Serif Bengali',serif;background:#eef4f0;color:var(--gray)
 .timer-box.show{display:block}
 .timer-box.danger{background:var(--red);border-color:transparent;animation:blink .8s infinite}
 @keyframes blink{50%{opacity:.6}}
+/* NETWORK INDICATOR */
+#netIndicator{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--red);color:#fff;padding:7px 18px;border-radius:20px;font-size:.82em;font-weight:700;z-index:9999;display:none;box-shadow:0 3px 12px rgba(0,0,0,.3);animation:slideUp .3s ease}
+#netIndicator.show{display:block}
+@keyframes slideUp{from{transform:translateX(-50%) translateY(20px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
 
 /* SCREENS */
 .screen{display:none;min-height:calc(100vh - 50px);padding:18px 10px}
@@ -234,6 +238,22 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
     <button class="logout-btn" id="logoutBtn" onclick="logout()">🚪 লগআউট</button>
   </div>
   <div class="timer-box" id="timerBox"><span id="timerDisplay">00:00</span></div>
+</div>
+
+<!-- NETWORK INDICATOR -->
+<div id="netIndicator">📵 ইন্টারনেট সংযোগ নেই — উত্তর সেভ আছে</div>
+
+<!-- ARCHIVE CHOICE MODAL -->
+<div class="modal-overlay" id="archiveChoiceModal">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title" id="archiveChoiceTitle">📚 আর্কাইভ পরীক্ষা</div>
+    <p style="font-size:.87em;color:var(--gray-mid);margin-bottom:18px">এই পরীক্ষা দিয়ে কী করতে চান?</p>
+    <div class="modal-actions" style="flex-direction:column;gap:10px">
+      <button class="btn btn-primary" onclick="startArchiveFromChoice()">🔄 অনুশীলন করব (টাইমার সহ)</button>
+      <button class="btn" style="background:var(--blue);color:#fff" onclick="viewArchiveQuestions()">👁️ শুধু প্রশ্ন দেখব (উত্তরসহ)</button>
+      <button class="btn btn-outline" onclick="closeArchiveChoiceModal()">বাতিল</button>
+    </div>
+  </div>
 </div>
 
 <!-- EXAM CONFIRM MODAL -->
@@ -928,7 +948,7 @@ async function loadStudentDashboard(){
   tests.forEach(t=>{
     const done=aMap[t.id];
     if(t.is_archived){
-      arcH+=`<div class="list-item list-item-arc" onclick="showExamModal(${t.id},true)">
+      arcH+=`<div class="list-item list-item-arc" onclick="showArchiveChoiceModal(${t.id},${JSON.stringify(escHtml(t.name))})">
         <div><h4 style="font-size:.97em">${escHtml(t.name)}</h4><small style="color:var(--gray-mid)">প্র্যাকটিস • ${t.duration_minutes} মি.</small></div>
         <span style="color:var(--blue);font-size:1.2em">🔄</span></div>`;
     }else{
@@ -1101,6 +1121,84 @@ async function showExamModal(testId,isArc){
   }catch(e){showToast('তথ্য লোড ব্যর্থ','error');}
 }
 function closeModal(){document.getElementById('examModal').classList.remove('show');}
+
+// ══════════════════════════════════════════════════
+// ARCHIVE CHOICE MODAL
+// ══════════════════════════════════════════════════
+let _archiveChoiceId = null;
+function showArchiveChoiceModal(testId, testName){
+  _archiveChoiceId = testId;
+  document.getElementById('archiveChoiceTitle').textContent = '📚 ' + testName;
+  document.getElementById('archiveChoiceModal').classList.add('show');
+}
+function closeArchiveChoiceModal(){
+  document.getElementById('archiveChoiceModal').classList.remove('show');
+  _archiveChoiceId = null;
+}
+function startArchiveFromChoice(){
+  closeArchiveChoiceModal();
+  showExamModal(_archiveChoiceId, true);
+}
+function viewArchiveQuestions(){
+  closeArchiveChoiceModal();
+  if(_archiveChoiceId) openArchiveViewForTest(_archiveChoiceId);
+}
+async function openArchiveViewForTest(testId){
+  try{
+    goTo('screenSubjectView', false);
+    const container = document.getElementById('subjectViewContainer');
+    const titleEl = document.getElementById('subjectViewTitle');
+    if(titleEl) titleEl.textContent = '📖 প্রশ্নপত্র (সব উত্তরসহ)';
+    if(container) container.innerHTML = '<div class="empty-msg">লোড হচ্ছে...</div>';
+    const links = await api(`test_questions?test_id=eq.${testId}&select=question_id`);
+    if(!links.length){ if(container) container.innerHTML='<div class="empty-msg">কোনো প্রশ্ন নেই</div>'; return; }
+    const qIds = links.map(l=>l.question_id).join(',');
+    const qs = await api(`questions?id=in.(${qIds})`);
+    if(!qs.length){ if(container) container.innerHTML='<div class="empty-msg">প্রশ্ন লোড ব্যর্থ</div>'; return; }
+    const lbls = OPT_LBL_MAP['ar'];
+    const html = qs.map((q,i)=>{
+      const opts = ['a','b','c','d'].map(o=>{
+        const isCorrect = o===q.correct;
+        const st = isCorrect
+          ? 'background:var(--green-pale,#e8f5e9);font-weight:600;color:var(--green);border:1.5px solid var(--green)'
+          : 'background:#fafafa;color:var(--gray)';
+        return `<div style="padding:8px 11px;border-radius:7px;margin-bottom:5px;font-size:.94em;${st};direction:rtl;text-align:right">
+          ${escHtml(q['opt_'+o]||'')} <span style="opacity:.7">(${lbls[o]})</span>${isCorrect?' ✓':''}
+        </div>`;
+      }).join('');
+      return `<div class="card" style="margin-bottom:11px;border-right:5px solid var(--green)">
+        <div style="font-size:.78em;color:var(--gray-mid);margin-bottom:6px">প্রশ্ন ${i+1} / ${qs.length}</div>
+        <div class="q-text" style="direction:rtl;text-align:right;font-size:1.05em;margin-bottom:10px">${escHtml(q.question_ar||'')}</div>
+        ${opts}
+        ${q.explanation_bn?`<div style="margin-top:9px;padding:9px 11px;background:#fff8e1;border-left:4px solid var(--gold);border-radius:6px;font-size:.88em;color:var(--gray)"><b>📖 ব্যাখ্যা:</b> ${escHtml(q.explanation_bn)}</div>`:''}
+      </div>`;
+    }).join('');
+    if(container) container.innerHTML = html;
+  }catch(e){
+    console.error(e);
+    showToast('প্রশ্ন লোড ব্যর্থ','error');
+  }
+}
+
+// ══════════════════════════════════════════════════
+// NETWORK STATUS INDICATOR
+// ══════════════════════════════════════════════════
+(function(){
+  const ni = document.getElementById('netIndicator');
+  function updateNet(){
+    const onQuiz = document.getElementById('screenQuiz')?.classList.contains('active');
+    if(!navigator.onLine && onQuiz) ni.classList.add('show');
+    else ni.classList.remove('show');
+  }
+  window.addEventListener('online', updateNet);
+  window.addEventListener('offline', updateNet);
+  // quiz screen-এ enter/leave হলেও চেক করো
+  const origGoTo = window.goTo;
+  // observer দিয়ে screenQuiz active class monitor
+  const observer = new MutationObserver(updateNet);
+  const quizScreen = document.getElementById('screenQuiz');
+  if(quizScreen) observer.observe(quizScreen, {attributes:true, attributeFilter:['class']});
+})();
 function confirmStartExam(){closeModal();isArchivePending?startArchiveExam(pendingExamId):startLiveExam(pendingExamId);}
 
 // ══════════════════════════════════════════════════
@@ -1121,6 +1219,11 @@ async function startTest(id){
     const qIds=links.map(l=>l.question_id).join(',');
     currentQuestions=await api(`questions?id=in.(${qIds})`);
     if(!currentQuestions.length) return showToast('প্রশ্ন লোড করা যায়নি','error');
+    // প্রশ্ন shuffle (Fisher-Yates)
+    for(let i=currentQuestions.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [currentQuestions[i],currentQuestions[j]]=[currentQuestions[j],currentQuestions[i]];
+    }
     userAnswers={};
     timeRemaining=(currentTest.duration_minutes||25)*60;
     document.getElementById('totalQCount').textContent=currentQuestions.length;
