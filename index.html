@@ -1495,6 +1495,19 @@ async function viewLeaderboard(id,name){
 // ══════════════════════════════════════════════════
 // SUBJECT-WISE PRACTICE
 // ══════════════════════════════════════════════════
+// Helper: ছাত্রের নিজ ব্যাচের আর্কাইভ পরীক্ষাগুলোর সব প্রশ্ন ID
+// এতে অন্য ব্যাচের প্রশ্ন leak হয় না, আবার লাইভ পরীক্ষার উত্তরও জানাজানি হয় না
+async function getBatchArchivedQuestionIds(){
+  const batchId = currentStudent?.batch_id;
+  if(!batchId) return [];
+  const tests = await api(`tests?batch_id=eq.${batchId}&is_archived=eq.true&select=id`);
+  if(!tests.length) return [];
+  const testIds = tests.map(t => t.id).join(',');
+  const links = await api(`test_questions?test_id=in.(${testIds})&select=question_id`);
+  if(!links.length) return [];
+  return [...new Set(links.map(l => l.question_id))];
+}
+
 async function goToSubjects(){
   goTo('screenSubjects', true);
   await loadSubjectCounts();
@@ -1507,13 +1520,23 @@ async function loadSubjectCounts(){
   if(arabicGrid) arabicGrid.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">লোড হচ্ছে...</div>';
   if(generalGrid) generalGrid.innerHTML = '';
   try{
-    const data = await api('questions?select=subject');
+    const qIds = await getBatchArchivedQuestionIds();
+    let data = [];
+    if(qIds.length){
+      data = await api(`questions?id=in.(${qIds.join(',')})&select=subject`);
+    }
     const counts = {};
     SUBJECTS_LIST.forEach(s => counts[s.code] = 0);
     data.forEach(d => { if(counts.hasOwnProperty(d.subject)) counts[d.subject]++; });
     subjectCountsCache = counts;
     const totalCounted = SUBJECTS_LIST.reduce((sum, s) => sum + (counts[s.code] || 0), 0);
-    if(totalEl) totalEl.innerHTML = `মোট প্রশ্ন: <b>${totalCounted}</b>টি`;
+    if(totalEl){
+      if(totalCounted === 0){
+        totalEl.innerHTML = '<span style="color:var(--red)">⚠️ আপনার ব্যাচে এখনো কোনো আর্কাইভ পরীক্ষা যোগ হয়নি। শিক্ষকের অপেক্ষা করুন।</span>';
+      }else{
+        totalEl.innerHTML = `আপনার ব্যাচের আর্কাইভে মোট প্রশ্ন: <b>${totalCounted}</b>টি`;
+      }
+    }
     const renderCard = s => {
       const cnt = counts[s.code] || 0;
       const empty = cnt === 0 ? ' empty' : '';
@@ -1561,8 +1584,11 @@ async function startSubjectQuiz(count){
   closeSubjectModeModal();
   try{
     showToast('⏳ প্রশ্ন লোড হচ্ছে...', 'info');
-    const qs = await api(`questions?subject=eq.${currentSubjectCode}&order=id.desc`);
-    if(!qs.length) return showToast('এই বিষয়ে প্রশ্ন নেই', 'error');
+    // শুধু নিজ ব্যাচের আর্কাইভ পরীক্ষার প্রশ্ন
+    const qIds = await getBatchArchivedQuestionIds();
+    if(!qIds.length) return showToast('আপনার ব্যাচে কোনো আর্কাইভ পরীক্ষা নেই', 'error');
+    const qs = await api(`questions?id=in.(${qIds.join(',')})&subject=eq.${currentSubjectCode}&order=id.desc`);
+    if(!qs.length) return showToast('এই বিষয়ে আপনার ব্যাচে প্রশ্ন নেই', 'error');
     let selected = qs;
     if(count !== 'all'){
       // shuffle then take first N
@@ -1616,9 +1642,14 @@ async function startSubjectView(){
   if(titleEl) titleEl.textContent = `${SUBJECT_LABEL_BY_CODE[currentSubjectCode]} — সব প্রশ্ন (পড়াশোনা মোড)`;
   if(container) container.innerHTML = '<div class="empty-msg">লোড হচ্ছে...</div>';
   try{
-    const qs = await api(`questions?subject=eq.${currentSubjectCode}&order=id.desc`);
+    // শুধু নিজ ব্যাচের আর্কাইভ পরীক্ষার প্রশ্ন
+    const qIds = await getBatchArchivedQuestionIds();
+    let qs = [];
+    if(qIds.length){
+      qs = await api(`questions?id=in.(${qIds.join(',')})&subject=eq.${currentSubjectCode}&order=id.desc`);
+    }
     if(!qs.length){
-      if(container) container.innerHTML = '<div class="empty-msg">এই বিষয়ে কোনো প্রশ্ন নেই</div>';
+      if(container) container.innerHTML = '<div class="empty-msg">এই বিষয়ে আপনার ব্যাচে কোনো প্রশ্ন নেই</div>';
       return;
     }
     const lbls = OPT_LBL_MAP['ar'];
