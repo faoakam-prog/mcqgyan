@@ -310,6 +310,11 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
         <div class="card">
           <div class="card-header">📂 CSV থেকে প্রশ্ন আপলোড করুন</div>
           <p class="help-text" style="margin-bottom:10px">CSV আপলোড করলে প্রশ্নগুলো স্বয়ংক্রিয়ভাবে নিচের তালিকায় যোগ হবে।</p>
+          <div class="field" style="margin-bottom:10px">
+            <label>📌 বিষয় <span style="color:var(--red)">*</span></label>
+            <select id="builderCsvSubject"></select>
+            <p class="help-text">এই বিষয় CSV-এর সব প্রশ্নে বসবে।</p>
+          </div>
           <div class="form-row" style="align-items:flex-end">
             <div class="field" style="margin:0"><label>CSV ফাইল নির্বাচন করুন</label><input type="file" id="builderCsvFile" accept=".csv"></div>
             <button class="btn btn-gold" style="width:auto;padding:10px 18px" onclick="uploadCSVToBuilder()">⬆ আপলোড ও যোগ করুন</button>
@@ -337,20 +342,29 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
           <div class="card-header">❓ প্রশ্ন ব্যাংক</div>
           <div class="form-row">
             <div class="field"><label>সার্চ</label><input type="text" id="qSearch" placeholder="প্রশ্ন / অপশন / উত্তর খুঁজুন" oninput="loadQuestions()"></div>
+            <div class="field"><label>বিষয় ফিল্টার</label><select id="qSubjectFilter" onchange="loadQuestions()"></select></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>টেস্ট ফিল্টার</label><select id="qTestFilter" onchange="loadQuestions()"><option value="">সব টেস্ট</option></select></div>
             <div class="field"><label>CSV ফাইল</label><input type="file" id="qbCsvFile" accept=".csv"></div>
           </div>
-          <div class="field"><label>টেস্ট ফিল্টার</label><select id="qTestFilter" onchange="loadQuestions()"><option value="">সব টেস্ট</option></select></div>
+          <div class="field">
+            <label>📌 আপলোডের সময় বিষয় <span style="color:var(--red)">*</span></label>
+            <select id="qbCsvSubject"></select>
+            <p class="help-text">CSV-এর সব প্রশ্ন এই বিষয়ে যোগ হবে। প্রতিবার আপলোডের আগে সঠিক বিষয় নির্বাচন করুন।</p>
+          </div>
           <button class="btn btn-primary" onclick="uploadCSV('qbCsvFile')">⬆ CSV আপলোড</button>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
             <button class="btn btn-small btn-gold" style="width:auto" onclick="exportQuestionsCSV()">CSV Export</button>
             <button class="btn btn-small btn-danger" style="width:auto" onclick="deleteSelectedQuestions()">নির্বাচিত মুছুন</button>
             <button class="btn btn-small btn-primary" style="width:auto" onclick="sendSelectedToBuilder()">🛠️ নির্বাচিত দিয়ে টেস্ট বানাও</button>
           </div>
+          <div id="qSubjectStats" style="margin-top:12px;font-size:.85em;color:var(--gray-mid)"></div>
         </div>
         <div style="overflow-x:auto">
           <table>
-            <thead><tr><th><input type="checkbox" id="qSelectAll" onchange="toggleAllQuestions(this.checked)"></th><th>#</th><th>প্রশ্ন</th><th>সঠিক উত্তর</th><th>অ্যাকশন</th></tr></thead>
-            <tbody id="adminQBody"><tr><td colspan="5" class="empty-msg">লোড হচ্ছে...</td></tr></tbody>
+            <thead><tr><th><input type="checkbox" id="qSelectAll" onchange="toggleAllQuestions(this.checked)"></th><th>#</th><th>প্রশ্ন</th><th>বিষয়</th><th>সঠিক</th><th>অ্যাকশন</th></tr></thead>
+            <tbody id="adminQBody"><tr><td colspan="6" class="empty-msg">লোড হচ্ছে...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -507,6 +521,10 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
       </div>
       <div class="field"><label>ব্যাখ্যা (বাংলা)</label><textarea id="questionEditExplanation" rows="3"></textarea></div>
     </div>
+    <div class="field">
+      <label>বিষয় <span style="color:var(--red)">*</span></label>
+      <select id="questionEditSubject"></select>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeQuestionEditModal()">বাতিল</button>
       <button class="btn btn-primary" onclick="saveQuestionEdit()">সেভ</button>
@@ -563,6 +581,51 @@ let currentQuestionRows = [];
 let selectedQuestionIds = new Set();
 let allTestsCache = [];
 let lastResultData = { title:'', subtitle:'', rows:[] };
+
+// ══ বিষয় তালিকা (Subjects) ══
+const SUBJECTS = [
+  // আরবি অংশ
+  { code:'quran',          label:'কুরআন',            group:'arabic'  },
+  { code:'usul_quran',     label:'উসুলুল কুরআন',      group:'arabic'  },
+  { code:'hadith',         label:'হাদিস',            group:'arabic'  },
+  { code:'usul_hadith',    label:'উসুলুল হাদিস',      group:'arabic'  },
+  { code:'fiqh',           label:'ফিকহ',             group:'arabic'  },
+  { code:'usul_fiqh',      label:'উসুলুল ফিকহ',       group:'arabic'  },
+  { code:'balagat_mantiq', label:'বালাগাত-মানতিক',   group:'arabic'  },
+  { code:'arabic_lit',     label:'আরবি সাহিত্য',      group:'arabic'  },
+  { code:'qawaid',         label:'কাওয়ায়েদ',          group:'arabic'  },
+  { code:'aqaid',          label:'আকাইদ',            group:'arabic'  },
+  // জেনারেল অংশ
+  { code:'bangla',         label:'বাংলা',            group:'general' },
+  { code:'english',        label:'ইংরেজি',           group:'general' },
+  { code:'math',           label:'গণিত',             group:'general' },
+  { code:'gk',             label:'সাধারণ জ্ঞান',      group:'general' },
+  // Safety placeholder
+  { code:'general_other',  label:'শ্রেণিবিহীন',       group:'other'   },
+];
+const SUBJECT_BY_CODE = Object.fromEntries(SUBJECTS.map(s => [s.code, s]));
+const VALID_SUBJECT_CODES = new Set(SUBJECTS.map(s => s.code));
+
+function subjectLabel(code){
+  return SUBJECT_BY_CODE[code]?.label || 'শ্রেণিবিহীন';
+}
+
+function subjectOptionsHtml(selected = '', includeAll = false, allLabel = 'সব বিষয়'){
+  let html = '';
+  if(includeAll) html += `<option value=""${selected === '' ? ' selected' : ''}>${escHtml(allLabel)}</option>`;
+  html += '<optgroup label="📘 আরবি অংশ">';
+  SUBJECTS.filter(s => s.group === 'arabic').forEach(s => {
+    html += `<option value="${s.code}"${s.code === selected ? ' selected' : ''}>${escHtml(s.label)}</option>`;
+  });
+  html += '</optgroup>';
+  html += '<optgroup label="📗 জেনারেল অংশ">';
+  SUBJECTS.filter(s => s.group === 'general').forEach(s => {
+    html += `<option value="${s.code}"${s.code === selected ? ' selected' : ''}>${escHtml(s.label)}</option>`;
+  });
+  html += '</optgroup>';
+  html += `<option value="general_other"${selected === 'general_other' ? ' selected' : ''}>শ্রেণিবিহীন</option>`;
+  return html;
+}
 
 async function api(endpoint, method='GET', body=null){
   const opts = { method, headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY, 'Content-Type': 'application/json' } };
@@ -692,11 +755,11 @@ function parseCSV(text){
   }
   const headers = splitLine(rows[0]).map(h => h.toLowerCase());
   const idx = n => headers.indexOf(n);
-  const [qI,aI,bI,cI,dI,corI,expI] = ['question_ar','opt_a','opt_b','opt_c','opt_d','correct','explanation_bn'].map(idx);
+  const [qI,aI,bI,cI,dI,corI,expI,subI] = ['question_ar','opt_a','opt_b','opt_c','opt_d','correct','explanation_bn','subject'].map(idx);
   return rows.slice(1).map(r => {
     const c = splitLine(r);
     if(!c[qI] || !c[qI].trim()) return null;
-    return {
+    const obj = {
       question_ar: c[qI] || '',
       opt_a: c[aI] || '',
       opt_b: c[bI] || '',
@@ -705,6 +768,12 @@ function parseCSV(text){
       correct: (c[corI] || 'a').trim().toLowerCase(),
       explanation_bn: expI >= 0 ? (c[expI] || '') : ''
     };
+    // CSV-তে subject কলাম থাকলে নিয়ে নাও (যদি valid হয়)
+    if(subI >= 0 && c[subI]){
+      const s = c[subI].trim().toLowerCase();
+      if(VALID_SUBJECT_CODES.has(s)) obj.subject = s;
+    }
+    return obj;
   }).filter(Boolean);
 }
 
@@ -1191,10 +1260,14 @@ async function deleteBatch(id){
 function uploadCSVToBuilder(){
   const file = document.getElementById('builderCsvFile')?.files?.[0];
   if(!file) return showToast('CSV ফাইল সিলেক্ট করুন', 'error');
+  const subject = document.getElementById('builderCsvSubject')?.value || '';
+  if(!subject || !VALID_SUBJECT_CODES.has(subject)) return showToast('আগে বিষয় নির্বাচন করুন', 'error');
   const reader = new FileReader();
   reader.onload = (e) => {
     const qs = parseCSV(e.target.result);
     if(!qs.length) return showToast('CSV খালি বা ফরম্যাট ভুল', 'error');
+    // CSV-তে subject না থাকলে dropdown-এর subject বসাও
+    qs.forEach(q => { if(!q.subject) q.subject = subject; });
     // পুরানো লিস্টে যোগ করো (ডুপ্লিকেট এড়াতে question_ar চেক)
     let added = 0;
     qs.forEach(q => {
@@ -1203,7 +1276,7 @@ function uploadCSVToBuilder(){
     });
     document.getElementById('builderCsvFile').value = '';
     const statusEl = document.getElementById('builderUploadStatus');
-    statusEl.textContent = `✅ ${added}টি প্রশ্ন যোগ হয়েছে (মোট: ${builderUploadedQuestions.length}টি)`;
+    statusEl.textContent = `✅ ${added}টি প্রশ্ন যোগ হয়েছে — ${subjectLabel(subject)} (মোট: ${builderUploadedQuestions.length}টি)`;
     statusEl.style.display = 'block';
     renderBuilderList();
     showToast(`✅ ${added}টি প্রশ্ন লোড হয়েছে`);
@@ -1299,7 +1372,8 @@ async function saveTestFromBuilder(){
       opt_c: q.opt_c,
       opt_d: q.opt_d,
       correct: q.correct,
-      explanation_bn: q.explanation_bn || ''
+      explanation_bn: q.explanation_bn || '',
+      subject: VALID_SUBJECT_CODES.has(q.subject) ? q.subject : 'general_other'
     })));
     const t = await api('tests', 'POST', {
       name,
@@ -1328,6 +1402,12 @@ async function saveTestFromBuilder(){
 function renderBuilder(){ }
 async function loadBuilder(){
   if(document.getElementById('builderAvailable')) renderBuilderList();
+  // builderCsvSubject dropdown ভর্তি করো
+  const bSel = document.getElementById('builderCsvSubject');
+  if(bSel && !bSel.dataset.populated){
+    bSel.innerHTML = '<option value="">— বিষয় নির্বাচন করুন —</option>' + subjectOptionsHtml('', false);
+    bSel.dataset.populated = '1';
+  }
 }
 function addQToBuilder(id){ }
 function removeQFromBuilder(id){ }
@@ -1336,6 +1416,7 @@ async function saveTest(){ await saveTestFromBuilder(); }
 async function loadQuestions(){
   const q = (document.getElementById('qSearch')?.value || '').toLowerCase();
   const selectedTestId = document.getElementById('qTestFilter')?.value || '';
+  const selectedSubject = document.getElementById('qSubjectFilter')?.value || '';
   await refreshQuestionFilterOptions(selectedTestId);
 
   let data = [];
@@ -1348,6 +1429,20 @@ async function loadQuestions(){
   }
 
   data = (data || []).sort((a,b) => (b.id || 0) - (a.id || 0));
+
+  // মোট সব subject-এর গণনা (filter applying-এর আগে — যাতে stats সঠিক থাকে)
+  const allCount = data.length;
+  const subjectCounts = {};
+  data.forEach(d => {
+    const s = d.subject || 'general_other';
+    subjectCounts[s] = (subjectCounts[s] || 0) + 1;
+  });
+
+  // subject filter apply
+  if(selectedSubject){
+    data = data.filter(d => (d.subject || 'general_other') === selectedSubject);
+  }
+
   const rows = data.filter(x => !q || [x.question_ar, x.opt_a, x.opt_b, x.opt_c, x.opt_d, x.correct].join(' ').toLowerCase().includes(q));
   currentQuestionRows = rows;
   const allSelected = rows.length > 0 && rows.every(x => selectedQuestionIds.has(x.id));
@@ -1357,13 +1452,42 @@ async function loadQuestions(){
   document.getElementById('adminQBody').innerHTML = rows.length ? rows.map((x, i) => `<tr>
     <td><input type="checkbox" ${selectedQuestionIds.has(x.id) ? 'checked' : ''} onchange="toggleQuestionSelect(${x.id}, this.checked)" style="width:16px;height:16px;cursor:pointer"></td>
     <td>${i + 1}</td>
-    <td style="max-width:540px">${escHtml(x.question_ar || '')}<div class="help-text">A) ${escHtml(x.opt_a || '')} | B) ${escHtml(x.opt_b || '')} | C) ${escHtml(x.opt_c || '')} | D) ${escHtml(x.opt_d || '')}</div></td>
+    <td style="max-width:480px">${escHtml(x.question_ar || '')}<div class="help-text">A) ${escHtml(x.opt_a || '')} | B) ${escHtml(x.opt_b || '')} | C) ${escHtml(x.opt_c || '')} | D) ${escHtml(x.opt_d || '')}</div></td>
+    <td><span class="badge" style="background:var(--blue);color:#fff;font-size:.78em;white-space:nowrap">${escHtml(subjectLabel(x.subject))}</span></td>
     <td><span class="badge badge-b">${escHtml((x.correct || '').toUpperCase())}</span></td>
     <td>
       <button class="btn btn-small btn-gold" onclick="openQuestionEdit(${x.id})">✏️</button>
       <button class="btn btn-small btn-danger" onclick="deleteQuestion(${x.id})">🗑</button>
     </td>
-  </tr>`).join('') : '<tr><td colspan="5" class="empty-msg">কোনো প্রশ্ন নেই</td></tr>';
+  </tr>`).join('') : '<tr><td colspan="6" class="empty-msg">কোনো প্রশ্ন নেই</td></tr>';
+
+  // subject stats
+  const statsEl = document.getElementById('qSubjectStats');
+  if(statsEl){
+    const arabicStats = SUBJECTS.filter(s => s.group === 'arabic')
+      .map(s => `${s.label}: <b>${subjectCounts[s.code] || 0}</b>`).join(' • ');
+    const generalStats = SUBJECTS.filter(s => s.group === 'general')
+      .map(s => `${s.label}: <b>${subjectCounts[s.code] || 0}</b>`).join(' • ');
+    const otherCount = subjectCounts['general_other'] || 0;
+    statsEl.innerHTML = `<div style="margin-bottom:4px"><b>📊 মোট প্রশ্ন: ${allCount}টি</b></div>
+      <div style="margin-bottom:3px">📘 আরবি অংশ — ${arabicStats}</div>
+      <div style="margin-bottom:3px">📗 জেনারেল অংশ — ${generalStats}</div>
+      ${otherCount ? `<div style="color:var(--red)">⚠️ শ্রেণিবিহীন: <b>${otherCount}</b>টি (এডিট করে বিষয় ঠিক করুন)</div>` : ''}`;
+  }
+
+  // subject filter dropdown ভর্তি করো (current value preserved)
+  const subFilter = document.getElementById('qSubjectFilter');
+  if(subFilter && !subFilter.dataset.populated){
+    subFilter.innerHTML = subjectOptionsHtml('', true, 'সব বিষয়');
+    subFilter.dataset.populated = '1';
+  }
+  // qbCsvSubject dropdown (CSV আপলোডের জন্য) ভর্তি করো
+  const csvSel = document.getElementById('qbCsvSubject');
+  if(csvSel && !csvSel.dataset.populated){
+    csvSel.innerHTML = '<option value="">— বিষয় নির্বাচন করুন —</option>' + subjectOptionsHtml('', false);
+    csvSel.dataset.populated = '1';
+  }
+
   if(document.getElementById('builderAvailable')) builderQuestionPool = data;
 }
 
@@ -1412,7 +1536,7 @@ function sendSelectedToBuilder(){
 
 function exportQuestionsCSV(){
   if(!currentQuestionRows.length) return showToast('রপ্তানি করার মতো প্রশ্ন নেই', 'error');
-  downloadCSV('questions.csv', currentQuestionRows, ['question_ar','opt_a','opt_b','opt_c','opt_d','correct','explanation_bn']);
+  downloadCSV('questions.csv', currentQuestionRows, ['question_ar','opt_a','opt_b','opt_c','opt_d','correct','explanation_bn','subject']);
 }
 
 async function openQuestionEdit(id){
@@ -1426,6 +1550,10 @@ async function openQuestionEdit(id){
   document.getElementById('questionEditD').value = q.opt_d || '';
   document.getElementById('questionEditCorrect').value = (q.correct || 'a').toLowerCase();
   document.getElementById('questionEditExplanation').value = q.explanation_bn || '';
+  // subject dropdown ভর্তি করো (current value selected)
+  const subSel = document.getElementById('questionEditSubject');
+  const curSub = VALID_SUBJECT_CODES.has(q.subject) ? q.subject : 'general_other';
+  subSel.innerHTML = subjectOptionsHtml(curSub, false);
   openModal('questionEditModal');
 }
 
@@ -1436,6 +1564,8 @@ function closeQuestionEditModal(){
 async function saveQuestionEdit(){
   const id = parseInt(document.getElementById('questionEditId').value);
   if(!id) return;
+  const subject = document.getElementById('questionEditSubject').value || 'general_other';
+  if(!VALID_SUBJECT_CODES.has(subject)) return showToast('সঠিক বিষয় নির্বাচন করুন', 'error');
   const payload = {
     question_ar: document.getElementById('questionEditAr').value.trim(),
     opt_a: document.getElementById('questionEditA').value.trim(),
@@ -1443,7 +1573,8 @@ async function saveQuestionEdit(){
     opt_c: document.getElementById('questionEditC').value.trim(),
     opt_d: document.getElementById('questionEditD').value.trim(),
     correct: document.getElementById('questionEditCorrect').value.trim().toLowerCase(),
-    explanation_bn: document.getElementById('questionEditExplanation').value.trim()
+    explanation_bn: document.getElementById('questionEditExplanation').value.trim(),
+    subject
   };
   if(!payload.question_ar) return showToast('প্রশ্ন লিখুন', 'error');
   try{
@@ -1521,13 +1652,17 @@ async function saveTestEdit(){
 function uploadCSV(inputId='qbCsvFile'){
   const file = document.getElementById(inputId)?.files?.[0];
   if(!file) return showToast('CSV ফাইল সিলেক্ট করুন', 'error');
+  const subject = document.getElementById('qbCsvSubject')?.value || '';
+  if(!subject || !VALID_SUBJECT_CODES.has(subject)) return showToast('আগে বিষয় নির্বাচন করুন', 'error');
   const reader = new FileReader();
   reader.onload = async(e) => {
     const qs = parseCSV(e.target.result);
     if(!qs.length) return showToast('CSV খালি বা ফরম্যাট ভুল', 'error');
+    // CSV-তে subject না থাকলে dropdown-এর subject বসাও
+    qs.forEach(q => { if(!q.subject) q.subject = subject; });
     try{
       await api('questions', 'POST', qs);
-      showToast(`✅ ${qs.length}টি প্রশ্ন যোগ হয়েছে`);
+      showToast(`✅ ${qs.length}টি প্রশ্ন যোগ হয়েছে — ${subjectLabel(subject)}`);
       document.getElementById(inputId).value = '';
       loadQuestions();
       loadBuilder();
