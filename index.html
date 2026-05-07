@@ -948,7 +948,7 @@ async function loadStudentDashboard(){
   tests.forEach(t=>{
     const done=aMap[t.id];
     if(t.is_archived){
-      arcH+=`<div class="list-item list-item-arc" onclick="showArchiveChoiceModal(${t.id},${JSON.stringify(escHtml(t.name))})">
+      arcH+=`<div class="list-item list-item-arc" onclick='showArchiveChoiceModal(${t.id}, ${escHtml(JSON.stringify(t.name))})'>
         <div><h4 style="font-size:.97em">${escHtml(t.name)}</h4><small style="color:var(--gray-mid)">প্র্যাকটিস • ${t.duration_minutes} মি.</small></div>
         <span style="color:var(--blue);font-size:1.2em">🔄</span></div>`;
     }else{
