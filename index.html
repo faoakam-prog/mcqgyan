@@ -1549,10 +1549,12 @@ function chooseSubject(code){
   if(b10) b10.style.display = cnt >= 10 ? '' : 'none';
   if(b20) b20.style.display = cnt >= 20 ? '' : 'none';
   if(bAll) bAll.style.display = cnt >= 1 ? '' : 'none';
-  openModal('subjectModeModal');
+  document.getElementById('subjectModeModal').classList.add('show');
 }
 
-function closeSubjectModeModal(){ closeModal('subjectModeModal'); }
+function closeSubjectModeModal(){
+  document.getElementById('subjectModeModal').classList.remove('show');
+}
 
 async function startSubjectQuiz(count){
   if(!currentSubjectCode) return;
