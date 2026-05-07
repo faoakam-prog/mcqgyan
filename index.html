@@ -164,6 +164,36 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
 @media(max-width:480px){
   .form-row-3,.form-row{grid-template-columns:1fr}
 }
+
+/* SUBJECT-WISE PRACTICE */
+.subjects-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:8px;margin-bottom:14px;
+}
+.subject-card{
+  background:#fff;border:1.5px solid var(--border);border-radius:9px;
+  padding:11px 8px;text-align:center;cursor:pointer;transition:all .18s;
+  user-select:none;
+}
+.subject-card:active{transform:scale(.97)}
+.subject-card:hover{background:var(--green-pale);border-color:var(--green)}
+.subject-card .name{font-weight:600;font-size:.93em;margin-bottom:3px;color:var(--gray)}
+.subject-card .count{font-size:.78em;color:var(--gray-mid)}
+.subject-card.empty{opacity:.45;cursor:not-allowed;pointer-events:none}
+.subject-mode-btn{
+  width:100%;padding:14px 12px;border-radius:10px;border:none;cursor:pointer;
+  font-size:.95em;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px;
+}
+.subject-mode-btn .small{font-size:.78em;font-weight:400;opacity:.85}
+.dash-feature-card{
+  background:linear-gradient(135deg,var(--blue),#2a4a7b);color:#fff;
+  border-radius:11px;padding:14px 16px;cursor:pointer;margin-bottom:14px;
+  display:flex;justify-content:space-between;align-items:center;transition:all .2s;
+}
+.dash-feature-card:active{transform:scale(.98)}
+.dash-feature-card:hover{filter:brightness(1.08)}
+.dash-feature-card .ttl{font-weight:700;font-size:1.02em;margin-bottom:3px}
+.dash-feature-card .sub{font-size:.83em;opacity:.85}
 </style>
 </head>
 <body>
@@ -356,6 +386,14 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
       </div>
     </div>
 
+    <div class="dash-feature-card" onclick="goToSubjects()">
+      <div>
+        <div class="ttl">📚 বিষয়ভিত্তিক অনুশীলন</div>
+        <div class="sub">কুরআন, হাদিস, ফিকহ, বাংলা — সব বিষয়ের প্রশ্ন</div>
+      </div>
+      <div style="font-size:1.6em;opacity:.85">→</div>
+    </div>
+
     <div class="section-title">🔴 লাইভ পরীক্ষাসমূহ</div>
     <div id="activeTestsList"></div>
 
@@ -405,6 +443,62 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
 </div>
 
 
+<!-- SUBJECT PRACTICE — LIST SCREEN -->
+<div class="screen" id="screenSubjects">
+  <div class="container">
+    <button class="btn btn-outline btn-small" style="margin-bottom:14px" onclick="loadStudentDashboard();nav('home')">← ড্যাশবোর্ডে ফিরুন</button>
+    <div class="card">
+      <h2 style="font-size:1.15em;color:var(--green);margin-bottom:6px">📚 বিষয়ভিত্তিক অনুশীলন</h2>
+      <p style="font-size:.85em;color:var(--gray-mid);margin-bottom:12px" id="subjectsTotalCount">লোড হচ্ছে...</p>
+
+      <div class="section-title">📘 আরবি অংশ</div>
+      <div id="subjectsArabicGrid" class="subjects-grid"></div>
+
+      <div class="section-title" style="color:var(--blue)">📗 জেনারেল অংশ</div>
+      <div id="subjectsGeneralGrid" class="subjects-grid"></div>
+    </div>
+    <div style="height:30px"></div>
+  </div>
+</div>
+
+<!-- SUBJECT VIEW SCREEN (পড়াশোনার মোড) -->
+<div class="screen" id="screenSubjectView">
+  <div class="container">
+    <button class="btn btn-outline btn-small" style="margin-bottom:14px" onclick="goToSubjects()">← বিষয়সমূহে ফিরুন</button>
+    <h2 id="subjectViewTitle" style="font-size:1.1em;color:var(--green);margin-bottom:12px">বিষয়</h2>
+    <div id="subjectViewContainer"></div>
+    <div style="height:30px"></div>
+  </div>
+</div>
+
+<!-- SUBJECT MODE MODAL -->
+<div class="modal-overlay" id="subjectModeModal" onclick="closeSubjectModeModal()">
+  <div class="card" style="max-width:380px;width:100%;margin:0 14px" onclick="event.stopPropagation()">
+    <h3 id="subjectModeTitle" style="text-align:center;color:var(--green);margin-bottom:5px">বিষয়</h3>
+    <p id="subjectModeCount" style="text-align:center;color:var(--gray-mid);font-size:.88em;margin-bottom:14px">০টি প্রশ্ন</p>
+    <p style="font-size:.92em;margin-bottom:10px">কীভাবে অনুশীলন করতে চান?</p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="subject-mode-btn" id="subQuiz10Btn" style="background:var(--green);color:#fff" onclick="startSubjectQuiz(10)">
+        📝 কুইজ — ১০টি প্রশ্ন
+        <span class="small">র‍্যান্ডম প্রশ্ন, স্কোর দেখাবে</span>
+      </button>
+      <button class="subject-mode-btn" id="subQuiz20Btn" style="background:var(--green);color:#fff" onclick="startSubjectQuiz(20)">
+        📝 কুইজ — ২০টি প্রশ্ন
+        <span class="small">আরও বড় চ্যালেঞ্জ</span>
+      </button>
+      <button class="subject-mode-btn" id="subQuizAllBtn" style="background:var(--blue);color:#fff" onclick="startSubjectQuiz('all')">
+        📝 কুইজ — সব প্রশ্ন
+        <span class="small">পুরো বিষয়ের পরীক্ষা</span>
+      </button>
+      <button class="subject-mode-btn" style="background:var(--gold);color:#fff" onclick="startSubjectView()">
+        👁️ পড়াশোনার মোড
+        <span class="small">সব প্রশ্ন + উত্তর + ব্যাখ্যা</span>
+      </button>
+    </div>
+    <button class="btn btn-outline" style="margin-top:12px;width:100%" onclick="closeSubjectModeModal()">বাতিল</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -428,6 +522,30 @@ let isArchiveMode=false;
 let examHistoryLocked=false;
 let pendingExamId=null, isArchivePending=false;
 let logoTaps=0, logoTimer=null;
+
+// ══ SUBJECT-WISE PRACTICE ══
+const SUBJECTS_LIST = [
+  // আরবি অংশ
+  { code:'quran',          label:'কুরআন',           group:'arabic'  },
+  { code:'usul_quran',     label:'উসুলুল কুরআন',     group:'arabic'  },
+  { code:'hadith',         label:'হাদিস',           group:'arabic'  },
+  { code:'usul_hadith',    label:'উসুলুল হাদিস',     group:'arabic'  },
+  { code:'fiqh',           label:'ফিকহ',            group:'arabic'  },
+  { code:'usul_fiqh',      label:'উসুলুল ফিকহ',      group:'arabic'  },
+  { code:'balagat_mantiq', label:'বালাগাত-মানতিক',  group:'arabic'  },
+  { code:'arabic_lit',     label:'আরবি সাহিত্য',     group:'arabic'  },
+  { code:'qawaid',         label:'কাওয়ায়েদ',         group:'arabic'  },
+  { code:'aqaid',          label:'আকাইদ',           group:'arabic'  },
+  // জেনারেল অংশ
+  { code:'bangla',         label:'বাংলা',           group:'general' },
+  { code:'english',        label:'ইংরেজি',          group:'general' },
+  { code:'math',           label:'গণিত',            group:'general' },
+  { code:'gk',             label:'সাধারণ জ্ঞান',     group:'general' },
+];
+const SUBJECT_LABEL_BY_CODE = Object.fromEntries(SUBJECTS_LIST.map(s => [s.code, s.label]));
+let isSubjectMode = false;
+let currentSubjectCode = null;
+let subjectCountsCache = {};
 
 function getOptionLabels(lang){
   return OPT_LBL_MAP[lang] || OPT_LBL_MAP['ar'];
@@ -673,7 +791,7 @@ function goTo(sid,addH=true){
   const t=document.getElementById(sid);
   if(t) t.classList.add('active');
   const lb=document.getElementById('logoutBtn');
-  lb.style.display=['screenDashboard','screenQuiz','screenResult','screenLeaderboard'].includes(sid)?'inline-block':'none';
+  lb.style.display=['screenDashboard','screenQuiz','screenResult','screenLeaderboard','screenSubjects','screenSubjectView'].includes(sid)?'inline-block':'none';
   if(addH) pushH(sid);
   window.scrollTo(0,0);
 }
@@ -989,8 +1107,8 @@ function confirmStartExam(){closeModal();isArchivePending?startArchiveExam(pendi
 // EXAM ENGINE
 // ══════════════════════════════════════════════════
 // ✅ FIX 1: isArchiveMode সঠিকভাবে সেট
-function startLiveExam(id){isArchiveMode=false;startTest(id);}
-function startArchiveExam(id){isArchiveMode=true;startTest(id);}
+function startLiveExam(id){isSubjectMode=false;isArchiveMode=false;startTest(id);}
+function startArchiveExam(id){isSubjectMode=false;isArchiveMode=true;startTest(id);}
 
 async function startTest(id){
   try{
@@ -1143,7 +1261,10 @@ async function submitQuiz(){
   });
   const neg=currentTest.negative_mark??0.25;
   const score=parseFloat(Math.max(0,c-(w*neg)).toFixed(2));
-  await saveAttempt(score,c,w,sk);
+  // Subject mode-এ DB-তে attempt save করি না (কারণ test_id null)
+  if(!isSubjectMode){
+    await saveAttempt(score,c,w,sk);
+  }
   renderResultView(c,w,sk,score);
 }
 
@@ -1281,7 +1402,10 @@ function renderResultView(c,w,sk,score){
   const passed = score >= passMark;
   const pct = total > 0 ? score / total : 0;
   let bannerCls,emoji,headline,subMsg;
-  if(isArchiveMode){
+  if(isSubjectMode){
+    bannerCls='practice';emoji='📚';headline='অনুশীলন সম্পন্ন!';
+    subMsg=`${SUBJECT_LABEL_BY_CODE[currentSubjectCode] || 'বিষয়'} — স্কোর ${score}/${total}। নিচে ব্যাখ্যাসহ পর্যালোচনা দেখুন।`;
+  }else if(isArchiveMode){
     bannerCls='practice';emoji='📚';headline='প্র্যাকটিস সম্পন্ন!';
     subMsg=`স্কোর ${score}/${total} — ${passPercent}% পাস মার্ক অনুযায়ী এই পরীক্ষা প্র্যাকটিস মোডে দেখা হচ্ছে।`;
   }else if(passed){
@@ -1334,8 +1458,11 @@ ${headline}`;
     });
   }
 
+  const backBtnHtml = isSubjectMode
+    ? `<button class="btn btn-primary" style="flex:1" onclick="goToSubjects()">← বিষয়সমূহে ফিরুন</button>`
+    : `<button class="btn btn-primary" style="flex:1" onclick="loadStudentDashboard();nav('home')">← ড্যাশবোর্ড</button>`;
   html+=`<div style="display:flex;gap:10px;margin-top:8px">
-    <button class="btn btn-primary" style="flex:1" onclick="loadStudentDashboard();nav('home')">← ড্যাশবোর্ড</button>
+    ${backBtnHtml}
     <a href="https://wa.me/?text=${encodeURIComponent(shareText)}" target="_blank" style="flex:.55;text-decoration:none">
       <button class="btn btn-wa" style="width:100%">📤 শেয়ার</button>
     </a>
@@ -1363,6 +1490,158 @@ async function viewLeaderboard(id,name){
         </tr>`;
       }).join('')
     :'<tr><td colspan="3" class="empty-msg">কোনো ফলাফল নেই</td></tr>';
+}
+
+// ══════════════════════════════════════════════════
+// SUBJECT-WISE PRACTICE
+// ══════════════════════════════════════════════════
+async function goToSubjects(){
+  goTo('screenSubjects', true);
+  await loadSubjectCounts();
+}
+
+async function loadSubjectCounts(){
+  const arabicGrid = document.getElementById('subjectsArabicGrid');
+  const generalGrid = document.getElementById('subjectsGeneralGrid');
+  const totalEl = document.getElementById('subjectsTotalCount');
+  if(arabicGrid) arabicGrid.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">লোড হচ্ছে...</div>';
+  if(generalGrid) generalGrid.innerHTML = '';
+  try{
+    const data = await api('questions?select=subject');
+    const counts = {};
+    SUBJECTS_LIST.forEach(s => counts[s.code] = 0);
+    data.forEach(d => { if(counts.hasOwnProperty(d.subject)) counts[d.subject]++; });
+    subjectCountsCache = counts;
+    const totalCounted = SUBJECTS_LIST.reduce((sum, s) => sum + (counts[s.code] || 0), 0);
+    if(totalEl) totalEl.innerHTML = `মোট প্রশ্ন: <b>${totalCounted}</b>টি`;
+    const renderCard = s => {
+      const cnt = counts[s.code] || 0;
+      const empty = cnt === 0 ? ' empty' : '';
+      const click = cnt === 0 ? '' : `onclick="chooseSubject('${s.code}')"`;
+      return `<div class="subject-card${empty}" ${click}>
+        <div class="name">${escHtml(s.label)}</div>
+        <div class="count">${cnt}টি প্রশ্ন</div>
+      </div>`;
+    };
+    if(arabicGrid){
+      arabicGrid.innerHTML = SUBJECTS_LIST.filter(s => s.group === 'arabic').map(renderCard).join('');
+    }
+    if(generalGrid){
+      generalGrid.innerHTML = SUBJECTS_LIST.filter(s => s.group === 'general').map(renderCard).join('');
+    }
+  }catch(e){
+    console.error(e);
+    if(arabicGrid) arabicGrid.innerHTML = '<div class="empty-msg" style="grid-column:1/-1;color:var(--red)">লোড ব্যর্থ — পরে আবার চেষ্টা করুন</div>';
+    showToast('বিষয় লোড করা যায়নি', 'error');
+  }
+}
+
+function chooseSubject(code){
+  if(!SUBJECT_LABEL_BY_CODE[code]) return;
+  currentSubjectCode = code;
+  const cnt = subjectCountsCache[code] || 0;
+  document.getElementById('subjectModeTitle').textContent = SUBJECT_LABEL_BY_CODE[code];
+  document.getElementById('subjectModeCount').innerHTML = `মোট প্রশ্ন: <b>${cnt}</b>টি`;
+  // ১০ বা ২০টি প্রশ্ন না থাকলে সেই button disable/hide
+  const b10 = document.getElementById('subQuiz10Btn');
+  const b20 = document.getElementById('subQuiz20Btn');
+  const bAll = document.getElementById('subQuizAllBtn');
+  if(b10) b10.style.display = cnt >= 10 ? '' : 'none';
+  if(b20) b20.style.display = cnt >= 20 ? '' : 'none';
+  if(bAll) bAll.style.display = cnt >= 1 ? '' : 'none';
+  openModal('subjectModeModal');
+}
+
+function closeSubjectModeModal(){ closeModal('subjectModeModal'); }
+
+async function startSubjectQuiz(count){
+  if(!currentSubjectCode) return;
+  closeSubjectModeModal();
+  try{
+    showToast('⏳ প্রশ্ন লোড হচ্ছে...', 'info');
+    const qs = await api(`questions?subject=eq.${currentSubjectCode}&order=id.desc`);
+    if(!qs.length) return showToast('এই বিষয়ে প্রশ্ন নেই', 'error');
+    let selected = qs;
+    if(count !== 'all'){
+      // shuffle then take first N
+      const shuffled = [...qs];
+      for(let i = shuffled.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      selected = shuffled.slice(0, count);
+    }
+    // Synthetic test setup — কোনো DB record নেই
+    isSubjectMode = true;
+    isArchiveMode = true; // ব্যাখ্যা দেখাতে চাই, archive mode সেটা handles করে
+    currentTest = {
+      id: null,
+      name: `${SUBJECT_LABEL_BY_CODE[currentSubjectCode]} — কুইজ`,
+      duration_minutes: 0,
+      total_marks: selected.length,
+      negative_mark: 0,
+      pass_percent: 50,
+      option_lang: 'ar'
+    };
+    OPT_LBL = getOptionLabels('ar');
+    currentQuestions = selected;
+    userAnswers = {};
+    timeRemaining = 0;
+    document.getElementById('totalQCount').textContent = currentQuestions.length;
+    document.getElementById('negMarkDisplay').textContent = '0';
+    document.getElementById('ansCount').textContent = 0;
+    document.getElementById('correctCount').textContent = 0;
+    document.getElementById('quizFill').style.width = '0%';
+    renderQuestions();
+    goTo('screenQuiz', true);
+    // টাইমার hide করে দাও — subject quiz-এ no timer
+    const tb = document.getElementById('timerBox');
+    tb.classList.remove('show', 'danger');
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }catch(e){
+    console.error(e);
+    showToast('কুইজ শুরু করা যায়নি', 'error');
+  }
+}
+
+async function startSubjectView(){
+  if(!currentSubjectCode) return;
+  closeSubjectModeModal();
+  goTo('screenSubjectView', true);
+  const container = document.getElementById('subjectViewContainer');
+  const titleEl = document.getElementById('subjectViewTitle');
+  if(titleEl) titleEl.textContent = `${SUBJECT_LABEL_BY_CODE[currentSubjectCode]} — সব প্রশ্ন (পড়াশোনা মোড)`;
+  if(container) container.innerHTML = '<div class="empty-msg">লোড হচ্ছে...</div>';
+  try{
+    const qs = await api(`questions?subject=eq.${currentSubjectCode}&order=id.desc`);
+    if(!qs.length){
+      if(container) container.innerHTML = '<div class="empty-msg">এই বিষয়ে কোনো প্রশ্ন নেই</div>';
+      return;
+    }
+    const lbls = OPT_LBL_MAP['ar'];
+    const html = qs.map((q, i) => {
+      const opts = ['a','b','c','d'].map(o => {
+        const isCorrect = o === q.correct;
+        const style = isCorrect
+          ? 'background:var(--green-pale);font-weight:600;color:var(--green);border:1.5px solid var(--green)'
+          : 'background:#fafafa;color:var(--gray)';
+        return `<div style="padding:8px 11px;border-radius:7px;margin-bottom:5px;font-size:.94em;${style};direction:rtl;text-align:right">
+          ${escHtml(q['opt_'+o] || '')} <span style="opacity:.7">(${lbls[o]})</span>${isCorrect ? ' ✓' : ''}
+        </div>`;
+      }).join('');
+      return `<div class="card" style="margin-bottom:11px;border-right:5px solid var(--green)">
+        <div style="font-size:.78em;color:var(--gray-mid);margin-bottom:6px">প্রশ্ন ${i + 1} / ${qs.length}</div>
+        <div class="q-text" style="direction:rtl;text-align:right;font-size:1.05em;margin-bottom:10px">${escHtml(q.question_ar || '')}</div>
+        ${opts}
+        ${q.explanation_bn ? `<div style="margin-top:9px;padding:9px 11px;background:#fff8e1;border-left:4px solid var(--gold);border-radius:6px;font-size:.88em;color:var(--gray)"><b>📖 ব্যাখ্যা:</b> ${escHtml(q.explanation_bn)}</div>` : ''}
+      </div>`;
+    }).join('');
+    if(container) container.innerHTML = html;
+  }catch(e){
+    console.error(e);
+    if(container) container.innerHTML = '<div class="empty-msg" style="color:var(--red)">লোড ব্যর্থ</div>';
+  }
 }
 
 // ══════════════════════════════════════════════════
