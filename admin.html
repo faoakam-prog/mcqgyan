@@ -514,6 +514,35 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
   </div>
 </div>
 
+<div class="modal-overlay" id="testEditModal" onclick="closeTestEditModal()">
+  <div class="modal-box" style="max-width:520px" onclick="event.stopPropagation()">
+    <div class="modal-title">✏️ পরীক্ষা এডিট</div>
+    <input type="hidden" id="testEditId">
+    <div class="field"><label>পরীক্ষার নাম</label><input type="text" id="testEditName" placeholder="পরীক্ষার নাম"></div>
+    <div class="form-row">
+      <div class="field"><label>সময় (মিনিট)</label><input type="number" id="testEditDuration" min="5"></div>
+      <div class="field"><label>পূর্ণমান</label><input type="number" id="testEditTotalMarks" min="1"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>পাশ নম্বর (%)</label><input type="number" id="testEditPassPercent" min="1" max="100"></div>
+      <div class="field"><label>নেগেটিভ মার্ক</label><input type="number" id="testEditNegMark" step="0.25" min="0"></div>
+    </div>
+    <div class="field">
+      <label>অপশন লেবেল ভাষা</label>
+      <select id="testEditOptLang">
+        <option value="ar">আরবি — أ ب ج د</option>
+        <option value="bn">বাংলা — ক খ গ ঘ</option>
+        <option value="en">ইংরেজি — A B C D</option>
+      </select>
+    </div>
+    <p class="help-text" style="margin-top:6px">ℹ️ প্রশ্ন এডিট করতে চাইলে "প্রশ্ন ব্যাংক" ট্যাবে যান।</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeTestEditModal()">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveTestEdit()">💾 সেভ</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -689,7 +718,7 @@ function printInPopup(htmlContent, title='জ্ঞানাঙ্গন'){
 <html lang="bn">
 <head>
 <meta charset="UTF-8">
-<title>${title}</title>
+<title>${escHtml(title)}</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;600;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing:border-box; margin:0; padding:0; }
@@ -728,12 +757,12 @@ async function generateQuestionPDF(id){
     let questionsHtml = '';
     questions.forEach((q, i) => {
       questionsHtml += `<div class="pq-card">
-        <b>${i+1}. ${q.question_ar || ''}</b>
+        <b>${i+1}. ${escHtml(q.question_ar || '')}</b>
         <div class="pq-opts">
-          <div>${labels[0]}) ${q.opt_a || ''}</div>
-          <div>${labels[1]}) ${q.opt_b || ''}</div>
-          <div>${labels[2]}) ${q.opt_c || ''}</div>
-          <div>${labels[3]}) ${q.opt_d || ''}</div>
+          <div>${labels[0]}) ${escHtml(q.opt_a || '')}</div>
+          <div>${labels[1]}) ${escHtml(q.opt_b || '')}</div>
+          <div>${labels[2]}) ${escHtml(q.opt_c || '')}</div>
+          <div>${labels[3]}) ${escHtml(q.opt_d || '')}</div>
         </div>
       </div>`;
     });
@@ -741,7 +770,7 @@ async function generateQuestionPDF(id){
       <div class="print-header" style="direction:ltr">
         <h1>জ্ঞানাঙ্গন (Gyanangon)</h1>
         <p style="font-size:12px;color:#555">শিক্ষক নিবন্ধন প্রস্তুতি</p>
-        <h2>বিষয়: ${test.name || ''}</h2>
+        <h2>বিষয়: ${escHtml(test.name || '')}</h2>
         <div class="meta">
           <span>সময়: ${test.duration_minutes || ''} মিনিট</span>
           <span>পূর্ণমান: ${test.total_marks || ''}</span>
@@ -761,16 +790,16 @@ function printResultPDF(){
   const {title, subtitle, rows} = lastResultData;
   const tableRows = rows.map((a, i) => `<tr>
     <td>${i < 3 ? ['🥇','🥈','🥉'][i] : i + 1}</td>
-    <td>${a.students?.name || '—'}</td>
-    <td style="font-family:monospace">${maskPhone(a.students?.phone || '')}</td>
+    <td>${escHtml(a.students?.name || '—')}</td>
+    <td style="font-family:monospace">${escHtml(maskPhone(a.students?.phone || ''))}</td>
     <td><b>${a.score}</b></td>
   </tr>`).join('');
   const html = `
     <div class="print-header" style="direction:ltr">
       <h1>জ্ঞানাঙ্গন (Gyanangon)</h1>
       <p style="font-size:12px;color:#555">শিক্ষক নিবন্ধন প্রস্তুতি</p>
-      <h2>${title}</h2>
-      <p class="res-sub">${subtitle}</p>
+      <h2>${escHtml(title)}</h2>
+      <p class="res-sub">${escHtml(subtitle)}</p>
     </div>
     <table>
       <thead><tr><th>র‍্যাঙ্ক</th><th>নাম</th><th>মোবাইল</th><th>স্কোর</th></tr></thead>
@@ -871,7 +900,7 @@ async function refreshGlobalBatches(){
     if(!el) return;
     const val = el.value;
     const pfx = id === 'dashAdminBatch' || id === 'stuFilterBatch' ? '<option value="">সব ব্যাচ</option>' : '<option value="">নির্বাচন করুন</option>';
-    el.innerHTML = pfx + globalBatches.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+    el.innerHTML = pfx + globalBatches.map(b => `<option value="${b.id}">${escHtml(b.name)}</option>`).join('');
     if(val) el.value = val;
   });
 }
@@ -884,9 +913,10 @@ async function loadAdminDashboard(){
   let aH = '', iH = '', arcH = '';
   tests.forEach(t => {
     const row = `<tr>
-      <td><b>${t.name}</b></td><td>${t.batches?.name || '—'}</td>
+      <td><b>${escHtml(t.name)}</b></td><td>${escHtml(t.batches?.name || '—')}</td>
       <td style="white-space:nowrap">
         <button class="btn btn-small btn-primary" onclick="generateQuestionPDF(${t.id})">📄 প্রশ্ন</button>
+        <button class="btn btn-small btn-gold" onclick="openTestEdit(${t.id})">✏️ এডিট</button>
         <button class="btn btn-small btn-gold" onclick="toggleField(${t.id},'is_archived',${!t.is_archived})">${t.is_archived ? '↩ আন-আর্কাইভ' : '📦 আর্কাইভ'}</button>
         <button class="btn btn-small btn-outline" onclick="toggleField(${t.id},'is_active',${!t.is_active})">${t.is_active ? '⏸ বন্ধ' : '▶ চালু'}</button>
         <button class="btn btn-small" style="background:var(--blue);color:#fff" onclick="toggleField(${t.id},'result_published',${!t.result_published})">${t.result_published ? '🙈 গোপন' : '📢 প্রকাশ'}</button>
@@ -934,8 +964,8 @@ async function loadAdminBatches(){
   document.getElementById('adminBatchList').innerHTML = globalBatches.map(b =>
     `<div class="list-item">
       <div style="flex:1" onclick="openBatchEditor(${b.id})">
-        <strong>${b.name}</strong>
-        <br><small style="color:var(--gray-mid)">পাস: ${b.password} | শিট পাস: ${b.sheet_password || 'নেই'} | রুটিন:${b.routine_link ? '✅' : '❌'} শিট:${b.sheet_link ? '✅' : '❌'} ভিডিও:${b.video_link ? '✅' : '❌'}</small>
+        <strong>${escHtml(b.name)}</strong>
+        <br><small style="color:var(--gray-mid)">পাস: ${escHtml(b.password)} | শিট পাস: ${escHtml(b.sheet_password || 'নেই')} | রুটিন:${b.routine_link ? '✅' : '❌'} শিট:${b.sheet_link ? '✅' : '❌'} ভিডিও:${b.video_link ? '✅' : '❌'}</small>
       </div>
       <button class="btn btn-small btn-danger" onclick="event.stopPropagation();deleteBatch(${b.id})">🗑</button>
     </div>`).join('') || '<div class="empty-msg">কোনো ব্যাচ নেই</div>';
@@ -1192,9 +1222,9 @@ function renderBuilderList(){
     ? list.map((x, i) => `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px;border-bottom:1px solid var(--border);background:${x._selected===false?'var(--red-pale)':'#fff'}">
         <input type="checkbox" id="bq-${i}" ${x._selected===false?'':'checked'} onchange="toggleBuilderQ(${builderUploadedQuestions.indexOf(x)})" style="margin-top:4px;width:16px;height:16px;cursor:pointer;flex-shrink:0">
         <label for="bq-${i}" style="flex:1;cursor:pointer">
-          <div style="font-size:.95em;font-weight:600;margin-bottom:3px">${x.question_ar || ''}</div>
-          <div style="font-size:.8em;color:var(--gray-mid)">${labels[0]}) ${x.opt_a||''} | ${labels[1]}) ${x.opt_b||''} | ${labels[2]}) ${x.opt_c||''} | ${labels[3]}) ${x.opt_d||''}</div>
-          <div style="font-size:.78em;color:var(--green);margin-top:2px">✓ সঠিক: ${(x.correct||'').toUpperCase()}</div>
+          <div style="font-size:.95em;font-weight:600;margin-bottom:3px">${escHtml(x.question_ar || '')}</div>
+          <div style="font-size:.8em;color:var(--gray-mid)">${labels[0]}) ${escHtml(x.opt_a||'')} | ${labels[1]}) ${escHtml(x.opt_b||'')} | ${labels[2]}) ${escHtml(x.opt_c||'')} | ${labels[3]}) ${escHtml(x.opt_d||'')}</div>
+          <div style="font-size:.78em;color:var(--green);margin-top:2px">✓ সঠিক: ${escHtml((x.correct||'').toUpperCase())}</div>
         </label>
         <button class="btn btn-small btn-danger" onclick="removeBuilderQ(${builderUploadedQuestions.indexOf(x)})" style="flex-shrink:0">✕</button>
       </div>`).join('')
@@ -1241,7 +1271,7 @@ async function refreshQuestionFilterOptions(selected=''){
     const el = document.getElementById('qTestFilter');
     if(el){
       const current = selected || el.value || '';
-      el.innerHTML = '<option value="">সব টেস্ট</option>' + allTestsCache.map(t => `<option value="${t.id}">${t.name || ('টেস্ট #' + t.id)}</option>`).join('');
+      el.innerHTML = '<option value="">সব টেস্ট</option>' + allTestsCache.map(t => `<option value="${t.id}">${escHtml(t.name || ('টেস্ট #' + t.id))}</option>`).join('');
       el.value = current;
     }
   }catch(_){}
@@ -1327,8 +1357,8 @@ async function loadQuestions(){
   document.getElementById('adminQBody').innerHTML = rows.length ? rows.map((x, i) => `<tr>
     <td><input type="checkbox" ${selectedQuestionIds.has(x.id) ? 'checked' : ''} onchange="toggleQuestionSelect(${x.id}, this.checked)" style="width:16px;height:16px;cursor:pointer"></td>
     <td>${i + 1}</td>
-    <td style="max-width:540px">${x.question_ar || ''}<div class="help-text">A) ${x.opt_a || ''} | B) ${x.opt_b || ''} | C) ${x.opt_c || ''} | D) ${x.opt_d || ''}</div></td>
-    <td><span class="badge badge-b">${(x.correct || '').toUpperCase()}</span></td>
+    <td style="max-width:540px">${escHtml(x.question_ar || '')}<div class="help-text">A) ${escHtml(x.opt_a || '')} | B) ${escHtml(x.opt_b || '')} | C) ${escHtml(x.opt_c || '')} | D) ${escHtml(x.opt_d || '')}</div></td>
+    <td><span class="badge badge-b">${escHtml((x.correct || '').toUpperCase())}</span></td>
     <td>
       <button class="btn btn-small btn-gold" onclick="openQuestionEdit(${x.id})">✏️</button>
       <button class="btn btn-small btn-danger" onclick="deleteQuestion(${x.id})">🗑</button>
@@ -1437,6 +1467,57 @@ async function deleteQuestion(id){
   }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
 }
 
+// ══ TEST EDIT ══
+async function openTestEdit(id){
+  try{
+    const t = await api(`tests?id=eq.${id}`);
+    if(!t.length) return showToast('পরীক্ষা পাওয়া যায়নি', 'error');
+    const test = t[0];
+    document.getElementById('testEditId').value = test.id;
+    document.getElementById('testEditName').value = test.name || '';
+    document.getElementById('testEditDuration').value = test.duration_minutes ?? 25;
+    document.getElementById('testEditTotalMarks').value = test.total_marks ?? 30;
+    document.getElementById('testEditPassPercent').value = test.pass_percent ?? 40;
+    document.getElementById('testEditNegMark').value = test.negative_mark ?? 0.25;
+    const lang = ['ar','bn','en'].includes(test.option_lang) ? test.option_lang : 'ar';
+    document.getElementById('testEditOptLang').value = lang;
+    openModal('testEditModal');
+  }catch(e){ showToast('❌ লোড ব্যর্থ: ' + e.message, 'error'); }
+}
+
+function closeTestEditModal(){
+  closeModal('testEditModal');
+}
+
+async function saveTestEdit(){
+  const id = parseInt(document.getElementById('testEditId').value);
+  if(!id) return;
+  const name = document.getElementById('testEditName').value.trim();
+  if(!name) return showToast('পরীক্ষার নাম লিখুন', 'error');
+  const duration = parseInt(document.getElementById('testEditDuration').value) || 25;
+  const totalMarks = parseInt(document.getElementById('testEditTotalMarks').value) || 30;
+  const passRaw = parseInt(document.getElementById('testEditPassPercent').value);
+  const passPercent = Number.isFinite(passRaw) ? Math.max(1, Math.min(100, passRaw)) : 40;
+  const negMark = parseFloat(document.getElementById('testEditNegMark').value);
+  const negative_mark = Number.isFinite(negMark) && negMark >= 0 ? negMark : 0.25;
+  const langSel = document.getElementById('testEditOptLang').value;
+  const option_lang = ['ar','bn','en'].includes(langSel) ? langSel : 'ar';
+  try{
+    await api(`tests?id=eq.${id}`, 'PATCH', {
+      name,
+      duration_minutes: duration,
+      total_marks: totalMarks,
+      pass_percent: passPercent,
+      negative_mark,
+      option_lang
+    });
+    showToast('✅ পরীক্ষা আপডেট হয়েছে');
+    closeTestEditModal();
+    allTestsCache = [];
+    loadAdminDashboard();
+  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
+}
+
 function uploadCSV(inputId='qbCsvFile'){
   const file = document.getElementById(inputId)?.files?.[0];
   if(!file) return showToast('CSV ফাইল সিলেক্ট করুন', 'error');
@@ -1460,7 +1541,7 @@ async function loadAdminTestsForResult(){
   document.getElementById('adminResultDisplay').style.display = 'none';
   if(!bId) return;
   const tests = await api(`tests?batch_id=eq.${bId}&order=id.desc`);
-  document.getElementById('resAdminTest').innerHTML = '<option value="">টেস্ট নির্বাচন করুন</option>' + tests.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+  document.getElementById('resAdminTest').innerHTML = '<option value="">টেস্ট নির্বাচন করুন</option>' + tests.map(t => `<option value="${t.id}">${escHtml(t.name)}</option>`).join('');
 }
 
 async function loadAdminResults(){
@@ -1475,8 +1556,8 @@ async function loadAdminResults(){
   lastResultData = { title, subtitle, rows: atts };
   document.getElementById('adminResBody').innerHTML = atts.length ? atts.map((a,i) => `<tr>
       <td>${i<3?['🥇','🥈','🥉'][i]:i+1}</td>
-      <td>${a.students?.name || '—'}</td>
-      <td style="font-family:monospace">${a.students?.phone || '—'}</td>
+      <td>${escHtml(a.students?.name || '—')}</td>
+      <td style="font-family:monospace">${escHtml(a.students?.phone || '—')}</td>
       <td><b>${a.score}</b></td>
     </tr>`).join('') : '<tr><td colspan="4" class="empty-msg">কোনো ফলাফল নেই</td></tr>';
   document.getElementById('adminResultDisplay').style.display = 'block';
@@ -1498,9 +1579,9 @@ function filterStudents(){
 function renderStudentTable(sts){
   document.getElementById('adminStBody').innerHTML = sts.length ? sts.map((s,i) => `<tr>
       <td><input type="checkbox" class="stuCheck" data-id="${s.id}"></td>
-      <td>${i+1}</td><td>${s.name || ''}</td>
-      <td style="font-family:monospace">${s.phone || '—'}</td>
-      <td>${s.batches?.name || '—'}</td>
+      <td>${i+1}</td><td>${escHtml(s.name || '')}</td>
+      <td style="font-family:monospace">${escHtml(s.phone || '—')}</td>
+      <td>${escHtml(s.batches?.name || '—')}</td>
       <td style="white-space:nowrap">
         <button class="btn btn-small btn-gold" onclick="openStudentEdit(${s.id})">✏️</button>
         <button class="btn btn-small btn-danger" onclick="deleteStudent(${s.id})">🗑</button>
