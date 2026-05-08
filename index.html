@@ -1664,21 +1664,21 @@ ${headline}`;
       </div>
     </div>`;
 
-  if(isArchiveMode){
-    html+=`<div class="section-title">📋 প্রশ্ন পর্যালোচনা</div>`;
-    currentQuestions.forEach((q,i)=>{
-      const ua=userAnswers[q.id];
-      const isCor=ua===q.correct;
-      const selectedText = ua ? `${OPT_LBL[ua]} — ${escHtml(q['opt_'+ua] || '')}` : 'উত্তর দেননি';
-      const correctText = `${OPT_LBL[q.correct]} — ${escHtml(q['opt_'+q.correct] || '')}`;
-      html+=`<div class="card" style="border-right:5px solid ${isCor?'var(--green)':(ua?'var(--red)':'var(--gold)')};margin-bottom:11px">
-        <div class="q-text" style="font-size:1.05em;margin-bottom:10px">${i+1}. ${escHtml(q.question_ar)}</div>
-        <p style="color:var(--green);font-size:.88em;margin-bottom:4px">✓ সঠিক উত্তর: ${correctText}</p>
-        <p style="color:${ua?(isCor?'var(--green)':'var(--red)'):'var(--gold)'};font-size:.88em;margin-bottom:4px">👉 আপনার উত্তর: ${selectedText}</p>
-        ${q.explanation_bn?`<div style="margin-top:8px;padding:8px;background:var(--green-pale);border-radius:7px;font-size:.83em;color:var(--green)"><b>ব্যাখ্যা:</b> ${escHtml(q.explanation_bn)}</div>`:''}
-      </div>`;
-    });
-  }
+  // লাইভ ও আর্কাইভ — দুইক্ষেত্রেই প্রশ্ন পর্যালোচনা দেখাবে
+  // (subject mode-এও দেখাবে)
+  html+=`<div class="section-title">📋 প্রশ্ন পর্যালোচনা</div>`;
+  currentQuestions.forEach((q,i)=>{
+    const ua=userAnswers[q.id];
+    const isCor=ua===q.correct;
+    const selectedText = ua ? `${OPT_LBL[ua]} — ${escHtml(q['opt_'+ua] || '')}` : 'উত্তর দেননি';
+    const correctText = `${OPT_LBL[q.correct]} — ${escHtml(q['opt_'+q.correct] || '')}`;
+    html+=`<div class="card" style="border-right:5px solid ${isCor?'var(--green)':(ua?'var(--red)':'var(--gold)')};margin-bottom:11px">
+      <div class="q-text" style="font-size:1.05em;margin-bottom:10px">${i+1}. ${escHtml(q.question_ar)}</div>
+      <p style="color:var(--green);font-size:.88em;margin-bottom:4px">✓ সঠিক উত্তর: ${correctText}</p>
+      <p style="color:${ua?(isCor?'var(--green)':'var(--red)'):'var(--gold)'};font-size:.88em;margin-bottom:4px">👉 আপনার উত্তর: ${selectedText}</p>
+      ${q.explanation_bn?`<div style="margin-top:8px;padding:8px;background:var(--green-pale);border-radius:7px;font-size:.83em;color:var(--green)"><b>ব্যাখ্যা:</b> ${escHtml(q.explanation_bn)}</div>`:''}
+    </div>`;
+  });
 
   const backBtnHtml = isSubjectMode
     ? `<button class="btn btn-primary" style="flex:1" onclick="goToSubjects()">← বিষয়সমূহে ফিরুন</button>`
