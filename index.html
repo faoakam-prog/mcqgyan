@@ -421,7 +421,8 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
     <div id="publishedResultsList"></div>
 
     <div class="section-title" style="color:var(--blue)">📚 ডিজিটাল লাইব্রেরি (আর্কাইভ)</div>
-    <p style="font-size:.79em;color:var(--red);margin:-5px 0 12px">* আর্কাইভ পরীক্ষা প্র্যাকটিসের জন্য। লিডারবোর্ডে যুক্ত হবে না।</p>
+    <p style="font-size:.79em;color:var(--red);margin:-5px 0 8px">* আর্কাইভ পরীক্ষা প্র্যাকটিসের জন্য। লিডারবোর্ডে যুক্ত হবে না।</p>
+    <div id="arcFilterPills" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
     <div id="archivedTestsList"></div>
     <div style="height:30px"></div>
   </div>
@@ -942,17 +943,19 @@ async function loadStudentDashboard(){
     }else nlWrap.style.display='none';
   }else nc.style.display='none';
   const tests=await api(`tests?batch_id=eq.${currentStudent.batch_id}&order=id.desc`);
+  // Scheduled tests auto-activate (ঢাকা GMT+6)
+  await autoActivateScheduled(tests);
   const lAtts=await api(`attempts?student_id=eq.${currentStudent.id}&is_practice=eq.false&order=id.asc`);
   const aMap={};lAtts.forEach(a=>aMap[a.test_id]=a);
   const CAT_LBL={regular:'📝 নিয়মিত',revision:'🔄 রিভিশন',mega_revision:'🔁 মেগা রিভিশন',full_model:'📋 ফুল মডেল',extra:'➕ অতিরিক্ত'};
-  let aH='',rH='',arcH='';
+  let aH='',rH='';
+  // Archive tests আলাদা রাখি filter-এর জন্য
+  const _arcTests = [];
   tests.forEach(t=>{
     const done=aMap[t.id];
     const catTag=t.category&&t.category!=='regular'?`<span style="font-size:.72em;background:#e8f4fd;color:var(--blue);padding:1px 7px;border-radius:10px;margin-left:5px;vertical-align:middle">${CAT_LBL[t.category]||''}</span>`:'';
     if(t.is_archived){
-      arcH+=`<div class="list-item list-item-arc" onclick='showArchiveChoiceModal(${t.id}, ${escHtml(JSON.stringify(t.name))})'>
-        <div><h4 style="font-size:.97em">${escHtml(t.name)}${catTag}</h4><small style="color:var(--gray-mid)">প্র্যাকটিস • ${t.duration_minutes} মি.</small></div>
-        <span style="color:var(--blue);font-size:1.2em">🔄</span></div>`;
+      _arcTests.push({...t, _catTag: catTag});
     }else{
       if(t.is_active&&!done){
         // exam_active চেক করো — এই test চলছে কিনা
@@ -984,7 +987,8 @@ async function loadStudentDashboard(){
   });
   aD.innerHTML=aH||'<div class="empty-msg">⏳ কোনো সচল পরীক্ষা নেই</div>';
   rD.innerHTML=rH||'<div class="empty-msg">📭 কোনো প্রকাশিত ফলাফল নেই</div>';
-  arcD.innerHTML=arcH||'<div class="empty-msg">📚 কোনো আর্কাইভ পরীক্ষা নেই</div>';
+  // Archive filter pills render
+  renderArchiveWithFilter(_arcTests, 'all');
 
   if(lAtts.length){
     const testIds=[...new Set(lAtts.map(a=>a.test_id).filter(Boolean))];
@@ -1122,7 +1126,71 @@ async function showExamModal(testId,isArc){
     document.getElementById('examModal').classList.add('show');
   }catch(e){showToast('তথ্য লোড ব্যর্থ','error');}
 }
+// ══════════════════════════════════════════════════
+// SCHEDULED EXAM AUTO-ACTIVATION
+// ══════════════════════════════════════════════════
+async function autoActivateScheduled(tests){
+  const now = Date.now();
+  const toActivate = tests.filter(t=>
+    !t.is_active && !t.is_archived && t.scheduled_at &&
+    new Date(t.scheduled_at).getTime() <= now
+  );
+  if(!toActivate.length) return;
+  await Promise.all(toActivate.map(t=>
+    api(`tests?id=eq.${t.id}`, 'PATCH', {is_active:true, scheduled_at:null})
+      .then(()=>{ t.is_active=true; t.scheduled_at=null; })
+      .catch(()=>{})
+  ));
+}
+
 function closeModal(){document.getElementById('examModal').classList.remove('show');}
+
+// ══════════════════════════════════════════════════
+// ARCHIVE FILTER
+// ══════════════════════════════════════════════════
+let _allArcTests = [];
+let _arcActiveCat = 'all';
+const _CAT_LBL_F={all:'🗂 সব',regular:'📝 নিয়মিত',revision:'🔄 রিভিশন',mega_revision:'🔁 মেগা রিভিশন',full_model:'📋 ফুল মডেল',extra:'➕ অতিরিক্ত'};
+
+function renderArchiveWithFilter(tests, activeCat){
+  if(tests) _allArcTests = tests;
+  if(activeCat) _arcActiveCat = activeCat;
+  const pillsEl = document.getElementById('arcFilterPills');
+  const listEl  = document.getElementById('archivedTestsList');
+  if(!listEl) return;
+
+  // কোন category-গুলো আছে সেটা বের করো
+  const usedCats = ['all', ...[...new Set(_allArcTests.map(t=>t.category||'regular'))]];
+  // একটাই category থাকলে pills দরকার নেই
+  if(pillsEl){
+    if(usedCats.length <= 2){
+      pillsEl.innerHTML='';
+    } else {
+      pillsEl.innerHTML = usedCats.map(c=>{
+        const active = _arcActiveCat===c;
+        const st = active
+          ? 'background:var(--blue);color:#fff;border-color:var(--blue)'
+          : 'background:#fff;color:var(--blue);border-color:var(--blue)';
+        return `<button onclick="renderArchiveWithFilter(null,'${c}')" style="padding:4px 12px;border-radius:15px;border:1.5px solid var(--blue);font-size:.8em;cursor:pointer;${st}">${_CAT_LBL_F[c]||c}</button>`;
+      }).join('');
+    }
+  }
+
+  const filtered = _arcActiveCat==='all'
+    ? _allArcTests
+    : _allArcTests.filter(t=>(t.category||'regular')===_arcActiveCat);
+
+  if(!filtered.length){
+    listEl.innerHTML='<div class="empty-msg">📚 এই ধরনের কোনো আর্কাইভ নেই</div>';
+    return;
+  }
+  listEl.innerHTML = filtered.map(t=>`
+    <div class="list-item list-item-arc" onclick='showArchiveChoiceModal(${t.id}, ${escHtml(JSON.stringify(t.name))})'>
+      <div><h4 style="font-size:.97em">${escHtml(t.name)}${t._catTag||''}</h4>
+        <small style="color:var(--gray-mid)">প্র্যাকটিস • ${t.duration_minutes} মি.</small></div>
+      <span style="color:var(--blue);font-size:1.2em">🔄</span>
+    </div>`).join('');
+}
 
 // ══════════════════════════════════════════════════
 // ARCHIVE CHOICE MODAL
