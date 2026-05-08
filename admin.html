@@ -1060,7 +1060,7 @@ async function loadAdminDashboard(){
       <td style="white-space:nowrap">
         <button class="btn btn-small btn-primary" onclick="generateQuestionPDF(${t.id})">📄 প্রশ্ন</button>
         <button class="btn btn-small btn-gold" onclick="openTestEdit(${t.id})">✏️ এডিট</button>
-        <button class="btn btn-small" style="background:#6a5acd;color:#fff" onclick="openDuplicateModal(${t.id},${JSON.stringify(t.name)})">📋 কপি</button>
+        <button class="btn btn-small" style="background:#6a5acd;color:#fff" data-dupid="${t.id}" data-dupname="${escHtml(t.name)}" onclick="openDuplicateModal(+this.dataset.dupid, this.dataset.dupname)">📋 কপি</button>
         <button class="btn btn-small btn-gold" onclick="toggleField(${t.id},'is_archived',${!t.is_archived})">${t.is_archived ? '↩ আন-আর্কাইভ' : '📦 আর্কাইভ'}</button>
         <button class="btn btn-small btn-outline" onclick="toggleField(${t.id},'is_active',${!t.is_active})">${t.is_active ? '⏸ বন্ধ' : '▶ চালু'}</button>
         <button class="btn btn-small" style="background:var(--blue);color:#fff" onclick="toggleField(${t.id},'result_published',${!t.result_published})">${t.result_published ? '🙈 গোপন' : '📢 প্রকাশ'}</button>
