@@ -465,6 +465,19 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
           <button class="btn btn-primary" onclick="saveSplashSettings()">💾 স্প্ল্যাশ সংরক্ষণ করুন</button>
         </div>
         <div class="card">
+          <div class="card-header">🔴 লাইভ পরীক্ষার নোটিফিকেশন</div>
+          <p style="font-size:.83em;color:var(--gray-mid);margin-bottom:12px">
+            চালু থাকলে — প্রতিদিন অ্যাপে প্রবেশের সময় সব চলমান লাইভ পরীক্ষার তালিকা একটি পপআপে দেখাবে।
+          </p>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.95em">
+              <input type="checkbox" id="liveNoticeToggle" style="width:18px;height:18px;cursor:pointer" onchange="saveLiveNoticeToggle()">
+              <span>লাইভ পরীক্ষার নোটিফিকেশন দেখানো চালু রাখুন</span>
+            </label>
+          </div>
+          <p style="font-size:.8em;color:var(--gray-mid)">💡 বন্ধ করলে — ইউজার নিজে ব্যাচে ঢুকে দেখবে কোন পরীক্ষা চলছে।</p>
+        </div>
+        <div class="card">
           <div class="card-header">📢 ঘোষণা পপআপ (সব ইউজারের জন্য)</div>
           <p style="font-size:.83em;color:var(--gray-mid);margin-bottom:10px">
             এই বার্তা সব লগইন ইউজারের কাছে পপআপ হিসেবে দেখাবে। ইউজার "পড়েছি" ক্লিক করলে ২৪ ঘণ্টার জন্য বন্ধ হবে — পরদিন আবার দেখাবে। নতুন ঘোষণা দিলে সাথে সাথে সবার কাছে দেখাবে।
@@ -488,6 +501,27 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
         </div>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="duplicateTestModal" onclick="closeDuplicateModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title">📋 পরীক্ষা কপি করুন</div>
+    <p style="font-size:.85em;color:var(--gray-mid);margin-bottom:14px" id="duplicateTestName"></p>
+    <div class="field">
+      <label>কোন ব্যাচে পাঠাবেন?</label>
+      <select id="duplicateTargetBatch">
+        <option value="">-- ব্যাচ নির্বাচন করুন --</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>নতুন পরীক্ষার নাম (ঐচ্ছিক — খালি রাখলে আগেরটাই থাকবে)</label>
+      <input type="text" id="duplicateNewName" placeholder="যেমন: সাপ্তাহিক মডেল টেস্ট — ব্যাচ ২">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeDuplicateModal()">বাতিল</button>
+      <button class="btn btn-primary" onclick="confirmDuplicateTest()">📋 কপি করুন</button>
     </div>
   </div>
 </div>
@@ -1026,6 +1060,7 @@ async function loadAdminDashboard(){
       <td style="white-space:nowrap">
         <button class="btn btn-small btn-primary" onclick="generateQuestionPDF(${t.id})">📄 প্রশ্ন</button>
         <button class="btn btn-small btn-gold" onclick="openTestEdit(${t.id})">✏️ এডিট</button>
+        <button class="btn btn-small" style="background:#6a5acd;color:#fff" onclick="openDuplicateModal(${t.id},${JSON.stringify(t.name)})">📋 কপি</button>
         <button class="btn btn-small btn-gold" onclick="toggleField(${t.id},'is_archived',${!t.is_archived})">${t.is_archived ? '↩ আন-আর্কাইভ' : '📦 আর্কাইভ'}</button>
         <button class="btn btn-small btn-outline" onclick="toggleField(${t.id},'is_active',${!t.is_active})">${t.is_active ? '⏸ বন্ধ' : '▶ চালু'}</button>
         <button class="btn btn-small" style="background:var(--blue);color:#fff" onclick="toggleField(${t.id},'result_published',${!t.result_published})">${t.result_published ? '🙈 গোপন' : '📢 প্রকাশ'}</button>
@@ -1044,6 +1079,77 @@ async function toggleField(id, f, v){
   await api(`tests?id=eq.${id}`, 'PATCH', { [f]:v });
   showToast('✅ আপডেট হয়েছে');
   loadAdminDashboard();
+}
+
+// ══════════════════════════════════════════════════
+// DUPLICATE / COPY TEST
+// ══════════════════════════════════════════════════
+let _dupTestId = null;
+let _dupTestOrigName = '';
+
+function openDuplicateModal(testId, testName){
+  _dupTestId = testId;
+  _dupTestOrigName = testName;
+  document.getElementById('duplicateTestName').textContent = '📋 পরীক্ষা: ' + testName;
+  document.getElementById('duplicateNewName').value = '';
+  // batch dropdown populate
+  const sel = document.getElementById('duplicateTargetBatch');
+  sel.innerHTML = '<option value="">-- ব্যাচ নির্বাচন করুন --</option>' +
+    globalBatches.map(b=>`<option value="${b.id}">${escHtml(b.name)}</option>`).join('');
+  openModal('duplicateTestModal');
+}
+
+function closeDuplicateModal(){
+  closeModal('duplicateTestModal');
+  _dupTestId = null;
+  _dupTestOrigName = '';
+}
+
+async function confirmDuplicateTest(){
+  const targetBatch = document.getElementById('duplicateTargetBatch').value;
+  if(!targetBatch) return showToast('ব্যাচ নির্বাচন করুন','error');
+  const newName = document.getElementById('duplicateNewName').value.trim() || _dupTestOrigName;
+  try{
+    showToast('⏳ কপি হচ্ছে...');
+    // ১. মূল test এর তথ্য আনো
+    const tests = await api(`tests?id=eq.${_dupTestId}`);
+    if(!tests || !tests.length) return showToast('পরীক্ষা খুঁজে পাওয়া যায়নি','error');
+    const orig = tests[0];
+    // ২. নতুন test তৈরি করো (is_active=false, is_archived=false, scheduled_at=null)
+    const newTest = await api('tests','POST',{
+      name: newName,
+      batch_id: parseInt(targetBatch),
+      duration_minutes: orig.duration_minutes,
+      total_marks: orig.total_marks,
+      negative_mark: orig.negative_mark,
+      pass_percent: orig.pass_percent,
+      option_lang: orig.option_lang,
+      category: orig.category || 'regular',
+      is_active: false,
+      is_archived: false,
+      result_published: false,
+      scheduled_at: null
+    });
+    if(!newTest || !newTest[0]) return showToast('নতুন পরীক্ষা তৈরি ব্যর্থ','error');
+    const newTestId = newTest[0].id;
+    // ৩. প্রশ্নের লিস্ট আনো
+    const links = await api(`test_questions?test_id=eq.${_dupTestId}&select=question_id`);
+    if(links && links.length){
+      // ব্যাচে insert করো
+      const insertRows = links.map(l=>({test_id:newTestId, question_id:l.question_id}));
+      // ১০টা করে batch insert
+      for(let i=0;i<insertRows.length;i+=50){
+        await api('test_questions','POST',insertRows.slice(i,i+50));
+      }
+    }
+    closeDuplicateModal();
+    const bName = globalBatches.find(b=>b.id==targetBatch)?.name || '';
+    showToast(`✅ "${newName}" — ${bName} ব্যাচে কপি সম্পন্ন! (${links?.length||0}টি প্রশ্ন)`);
+    loadAdminDashboard();
+  }catch(e){
+    console.error(e);
+    showToast('❌ কপি ব্যর্থ: '+e.message,'error');
+  }
 }
 
 async function deleteTest(id){
@@ -1905,8 +2011,21 @@ async function loadSplashAndAnnouncement(){
       document.getElementById('splashMessage').value = s[0].splash_message || '';
       document.getElementById('announcementTitle').value = s[0].announcement_title || '';
       document.getElementById('announcementText').value = s[0].announcement_text || '';
+      // live notice toggle
+      const tog = document.getElementById('liveNoticeToggle');
+      if(tog) tog.checked = (s[0].show_live_notice !== false); // default true
     }
   }catch(e){console.error('Settings load error:', e);}
+}
+
+async function saveLiveNoticeToggle(){
+  const val = document.getElementById('liveNoticeToggle').checked;
+  try{
+    const s = await api('settings?id=eq.1');
+    if(s && s.length) await api('settings?id=eq.1','PATCH',{show_live_notice:val});
+    else await api('settings','POST',{id:1,show_live_notice:val});
+    showToast(val ? '✅ লাইভ নোটিফিকেশন চালু করা হয়েছে' : '✅ লাইভ নোটিফিকেশন বন্ধ করা হয়েছে');
+  }catch(e){showToast('❌ সংরক্ষণ ব্যর্থ','error');}
 }
 
 async function saveSplashSettings(){
