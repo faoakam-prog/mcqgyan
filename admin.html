@@ -306,6 +306,16 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
               </select>
             </div>
           </div>
+          <div class="field">
+            <label>📂 পরীক্ষার ধরন (Category)</label>
+            <select id="bCategory">
+              <option value="regular">📝 নিয়মিত পরীক্ষা</option>
+              <option value="revision">🔄 রিভিশন পরীক্ষা</option>
+              <option value="mega_revision">🔁 মেগা রিভিশন</option>
+              <option value="full_model">📋 ফুল মডেল টেস্ট</option>
+              <option value="extra">➕ অতিরিক্ত পরীক্ষা</option>
+            </select>
+          </div>
         </div>
         <div class="card">
           <div class="card-header">📂 CSV থেকে প্রশ্ন আপলোড করুন</div>
@@ -551,6 +561,16 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
         <option value="ar">আরবি — أ ب ج د</option>
         <option value="bn">বাংলা — ক খ গ ঘ</option>
         <option value="en">ইংরেজি — A B C D</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>📂 পরীক্ষার ধরন (Category)</label>
+      <select id="testEditCategory">
+        <option value="regular">📝 নিয়মিত পরীক্ষা</option>
+        <option value="revision">🔄 রিভিশন পরীক্ষা</option>
+        <option value="mega_revision">🔁 মেগা রিভিশন</option>
+        <option value="full_model">📋 ফুল মডেল টেস্ট</option>
+        <option value="extra">➕ অতিরিক্ত পরীক্ষা</option>
       </select>
     </div>
     <p class="help-text" style="margin-top:6px">ℹ️ প্রশ্ন এডিট করতে চাইলে "প্রশ্ন ব্যাংক" ট্যাবে যান।</p>
@@ -980,9 +1000,11 @@ async function loadAdminDashboard(){
   const f = bId ? `batch_id=eq.${bId}&` : '';
   const tests = await api(`tests?${f}order=id.desc&select=*,batches(name)`);
   let aH = '', iH = '', arcH = '';
+  const CAT_LABEL = {regular:'📝 নিয়মিত',revision:'🔄 রিভিশন',mega_revision:'🔁 মেগা রিভিশন',full_model:'📋 ফুল মডেল',extra:'➕ অতিরিক্ত'};
   tests.forEach(t => {
+    const catBadge = `<span style="font-size:.75em;background:#e8f4fd;color:var(--blue);padding:2px 7px;border-radius:10px;margin-left:5px">${CAT_LABEL[t.category]||'📝 নিয়মিত'}</span>`;
     const row = `<tr>
-      <td><b>${escHtml(t.name)}</b></td><td>${escHtml(t.batches?.name || '—')}</td>
+      <td><b>${escHtml(t.name)}</b>${catBadge}</td><td>${escHtml(t.batches?.name || '—')}</td>
       <td style="white-space:nowrap">
         <button class="btn btn-small btn-primary" onclick="generateQuestionPDF(${t.id})">📄 প্রশ্ন</button>
         <button class="btn btn-small btn-gold" onclick="openTestEdit(${t.id})">✏️ এডিট</button>
@@ -1359,6 +1381,8 @@ async function saveTestFromBuilder(){
   const passPercent = Number.isFinite(passPercentRaw) ? Math.max(1, Math.min(100, passPercentRaw)) : 40;
   const neg = parseFloat(document.getElementById('bNegMark').value) || 0.25;
   const optLang = ['ar','bn','en'].includes(document.getElementById('bOptLang').value) ? document.getElementById('bOptLang').value : 'ar';
+  const categoryRaw = document.getElementById('bCategory')?.value || 'regular';
+  const category = ['regular','revision','mega_revision','full_model','extra'].includes(categoryRaw) ? categoryRaw : 'regular';
   if(!name) return showToast('পরীক্ষার নাম লিখুন', 'error');
   if(!bId) return showToast('ব্যাচ নির্বাচন করুন', 'error');
   const selectedQs = builderUploadedQuestions.filter(q => q._selected !== false);
@@ -1382,7 +1406,8 @@ async function saveTestFromBuilder(){
       total_marks: marks,
       negative_mark: neg,
       pass_percent: passPercent,
-      option_lang: optLang
+      option_lang: optLang,
+      category
     });
     const testId = t[0].id;
     await api('test_questions', 'POST', savedQs.map(q => ({ test_id:testId, question_id:q.id })));
@@ -1612,6 +1637,8 @@ async function openTestEdit(id){
     document.getElementById('testEditNegMark').value = test.negative_mark ?? 0.25;
     const lang = ['ar','bn','en'].includes(test.option_lang) ? test.option_lang : 'ar';
     document.getElementById('testEditOptLang').value = lang;
+    const validCats = ['regular','revision','mega_revision','full_model','extra'];
+    document.getElementById('testEditCategory').value = validCats.includes(test.category) ? test.category : 'regular';
     openModal('testEditModal');
   }catch(e){ showToast('❌ লোড ব্যর্থ: ' + e.message, 'error'); }
 }
@@ -1633,6 +1660,8 @@ async function saveTestEdit(){
   const negative_mark = Number.isFinite(negMark) && negMark >= 0 ? negMark : 0.25;
   const langSel = document.getElementById('testEditOptLang').value;
   const option_lang = ['ar','bn','en'].includes(langSel) ? langSel : 'ar';
+  const catSel = document.getElementById('testEditCategory').value;
+  const category = ['regular','revision','mega_revision','full_model','extra'].includes(catSel) ? catSel : 'regular';
   try{
     await api(`tests?id=eq.${id}`, 'PATCH', {
       name,
@@ -1640,7 +1669,8 @@ async function saveTestEdit(){
       total_marks: totalMarks,
       pass_percent: passPercent,
       negative_mark,
-      option_lang
+      option_lang,
+      category
     });
     showToast('✅ পরীক্ষা আপডেট হয়েছে');
     closeTestEditModal();
