@@ -1020,7 +1020,7 @@ async function loadAdminDashboard(){
   }
   tests.forEach(t => {
     const catBadge = `<span style="font-size:.75em;background:#e8f4fd;color:var(--blue);padding:2px 7px;border-radius:10px;margin-left:5px">${CAT_LABEL[t.category]||'📝 নিয়মিত'}</span>`;
-    const schedBadge = t.scheduled_at ? `<span style="font-size:.72em;background:#fff8e1;color:var(--gold);padding:2px 7px;border-radius:10px;margin-left:4px">🕐 ${new Date(new Date(t.scheduled_at).getTime()+6*3600*1000).toLocaleString('bn-BD',{dateStyle:'short',timeStyle:'short'})}</span>` : '';
+    const schedBadge = t.scheduled_at ? `<span style="font-size:.72em;background:#fff8e1;color:var(--gold);padding:2px 7px;border-radius:10px;margin-left:4px">🕐 ${new Date(t.scheduled_at).toLocaleString('bn-BD',{timeZone:'Asia/Dhaka',dateStyle:'short',timeStyle:'short'})}</span>` : '';
     const row = `<tr>
       <td><b>${escHtml(t.name)}</b>${catBadge}${schedBadge}</td><td>${escHtml(t.batches?.name || '—')}</td>
       <td style="white-space:nowrap">
@@ -1664,8 +1664,11 @@ async function openTestEdit(id){
     // scheduled_at: UTC → local datetime-local (GMT+6)
     const schedEl = document.getElementById('testEditScheduledAt');
     if(test.scheduled_at){
-      const d = new Date(new Date(test.scheduled_at).getTime() + 6*3600*1000);
-      schedEl.value = d.toISOString().slice(0,16);
+      // UTC → Dhaka local string for datetime-local input
+      const d = new Date(test.scheduled_at);
+      const offset = 6 * 60; // GMT+6 in minutes
+      const local = new Date(d.getTime() + offset * 60000);
+      schedEl.value = local.toISOString().slice(0,16);
     } else { schedEl.value = ''; }
     openModal('testEditModal');
   }catch(e){ showToast('❌ লোড ব্যর্থ: ' + e.message, 'error'); }
