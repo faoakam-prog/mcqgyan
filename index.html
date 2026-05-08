@@ -244,6 +244,16 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
 <div id="netIndicator">📵 ইন্টারনেট সংযোগ নেই — উত্তর সেভ আছে</div>
 
 <!-- ARCHIVE CHOICE MODAL -->
+<!-- Live Exam Notice Modal -->
+<div class="modal-overlay" id="liveNoticeModal">
+  <div class="modal-box" style="max-width:400px" onclick="event.stopPropagation()">
+    <div class="modal-title" style="color:var(--red)">🔴 চলমান লাইভ পরীক্ষা</div>
+    <p style="font-size:.85em;color:var(--gray-mid);margin-bottom:12px">এই মুহূর্তে নিচের ব্যাচগুলোতে লাইভ পরীক্ষা চলছে। তোমার ব্যাচে লগইন করে পরীক্ষায় অংশ নাও!</p>
+    <div id="liveNoticeList" style="margin-bottom:16px"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="closeLiveNoticeModal()">✅ বুঝেছি, লগইন করব</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="archiveChoiceModal">
   <div class="modal-box" onclick="event.stopPropagation()">
     <div class="modal-title" id="archiveChoiceTitle">📚 আর্কাইভ পরীক্ষা</div>
@@ -878,12 +888,14 @@ window.onload=async()=>{
     await loadStudentDashboard();
     goTo('screenDashboard',false);
     setTimeout(()=>checkAnnouncement(), 1200);
+    setTimeout(()=>checkLiveExamNotice(), 2000);
     return;
   }
   const hash=window.location.hash.substring(1);
   if(hash&&document.getElementById(hash)) goTo(hash,false);
   else goTo('screenLogin',false);
   setTimeout(()=>checkAnnouncement(), 1200);
+  setTimeout(()=>checkLiveExamNotice(), 2000);
 };
 
 // ══════════════════════════════════════════════════
@@ -1058,6 +1070,41 @@ function markAnnouncementRead(){
   if(id) localStorage.setItem('ann_seen_' + id, Date.now().toString());
   localStorage.removeItem('seen_announcement_id');
   document.getElementById('announcePopup').style.display = 'none';
+}
+
+// ══════════════════════════════════════════════════
+// LIVE EXAM NOTICE (প্রতিদিন একবার)
+// ══════════════════════════════════════════════════
+async function checkLiveExamNotice(){
+  try{
+    // আজকে কি দেখানো হয়েছে?
+    const todayKey = 'live_notice_' + new Date().toISOString().slice(0,10);
+    if(localStorage.getItem(todayKey)) return;
+    // settings চেক করো
+    const s = await api('settings?id=eq.1');
+    if(!s || !s[0]) return;
+    if(s[0].show_live_notice === false) return; // admin বন্ধ করেছে
+    // সব active পরীক্ষা আনো (সব ব্যাচের)
+    const tests = await api('tests?is_active=eq.true&select=id,name,batch_id,batches(name)');
+    if(!tests || !tests.length) return; // কোনো লাইভ পরীক্ষা নেই
+    // তালিকা তৈরি করো
+    const listHtml = tests.map(t=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fff8f8;border-left:3px solid var(--red);border-radius:6px;margin-bottom:7px">
+        <span style="color:var(--red);font-size:1em">🔴</span>
+        <div>
+          <div style="font-weight:600;font-size:.92em">${escHtml(t.name)}</div>
+          <div style="font-size:.78em;color:var(--gray-mid)">ব্যাচ: ${escHtml(t.batches?.name || '—')}</div>
+        </div>
+      </div>`).join('');
+    document.getElementById('liveNoticeList').innerHTML = listHtml;
+    document.getElementById('liveNoticeModal').classList.add('show');
+    // আজকের জন্য mark করো
+    localStorage.setItem(todayKey, '1');
+  }catch(e){console.error('Live notice error:', e);}
+}
+
+function closeLiveNoticeModal(){
+  document.getElementById('liveNoticeModal').classList.remove('show');
 }
 
 // ══════════════════════════════════════════════════
