@@ -21,28 +21,28 @@
   "screenshots": [
     {
       "src": "login.jpg",
-      "sizes": "706x1400",
+      "sizes": "720x1600",
       "type": "image/jpeg",
       "form_factor": "narrow",
       "label": "শিক্ষার্থী প্রবেশ পেজ"
     },
     {
       "src": "dashboard.jpg",
-      "sizes": "706x1400",
+      "sizes": "720x1600",
       "type": "image/jpeg",
       "form_factor": "narrow",
       "label": "ড্যাশবোর্ড — পরীক্ষা তালিকা"
     },
     {
       "src": "result.jpg",
-      "sizes": "706x1400",
+      "sizes": "720x1600",
       "type": "image/jpeg",
       "form_factor": "narrow",
       "label": "পরীক্ষার ফলাফল ও প্রশ্ন পর্যালোচনা"
     },
     {
       "src": "archive.jpg",
-      "sizes": "706x1400",
+      "sizes": "720x1600",
       "type": "image/jpeg",
       "form_factor": "narrow",
       "label": "ডিজিটাল লাইব্রেরি ও আর্কাইভ"
