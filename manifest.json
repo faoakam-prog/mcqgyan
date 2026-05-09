@@ -20,28 +20,28 @@
   ],
   "screenshots": [
     {
-      "src": "screenshots/login.jpg",
+      "src": "login.jpg",
       "sizes": "706x1400",
       "type": "image/jpeg",
       "form_factor": "narrow",
       "label": "শিক্ষার্থী প্রবেশ পেজ"
     },
     {
-      "src": "screenshots/dashboard.jpg",
+      "src": "dashboard.jpg",
       "sizes": "706x1400",
       "type": "image/jpeg",
       "form_factor": "narrow",
       "label": "ড্যাশবোর্ড — পরীক্ষা তালিকা"
     },
     {
-      "src": "screenshots/result.jpg",
+      "src": "result.jpg",
       "sizes": "706x1400",
       "type": "image/jpeg",
       "form_factor": "narrow",
       "label": "পরীক্ষার ফলাফল ও প্রশ্ন পর্যালোচনা"
     },
     {
-      "src": "screenshots/archive.jpg",
+      "src": "archive.jpg",
       "sizes": "706x1400",
       "type": "image/jpeg",
       "form_factor": "narrow",
