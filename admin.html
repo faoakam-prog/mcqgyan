@@ -862,14 +862,36 @@ function printInPopup(htmlContent, title='জ্ঞানাঙ্গন'){
   .print-header .meta { display:flex; justify-content:space-between; padding:0 10px; font-size:12px; color:#555; margin-top:6px; direction:ltr; }
   .pq-card { border:1px solid #ddd; border-radius:10px; padding:12px 14px; margin-bottom:12px; }
   .pq-opts { margin-top:8px; display:grid; gap:6px; font-size:13px; }
+  .pq-correct { color:#1a6b3c; font-weight:bold; }
+  .pq-answer { margin-top:8px; font-size:12px; color:#1a6b3c; font-weight:bold; border-top:1px dashed #ccc; padding-top:6px; }
+  .pq-explanation { margin-top:4px; font-size:12px; color:#555; font-style:italic; }
   table { width:100%; border-collapse:collapse; margin-top:16px; }
   th,td { border:1px solid #ccc; padding:8px 10px; text-align:left; }
   th { background:#f6f6f6; }
   .footer-note { margin-top:16px; font-size:11px; color:#666; text-align:center; }
+  .watermark-wrap { position:relative; min-height:100vh; }
+  .watermark-wrap::before {
+    content: 'জ্ঞানাঙ্গন\A 01746839635';
+    white-space: pre;
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(-35deg);
+    font-size: 52px;
+    font-weight: 700;
+    color: rgba(26, 107, 60, 0.10);
+    pointer-events: none;
+    z-index: 9999;
+    text-align: center;
+    line-height: 1.4;
+    font-family: 'Noto Serif Bengali', serif;
+  }
+  @media print { .watermark-wrap::before { position:fixed; } }
 </style>
 </head>
 <body>
+<div class="watermark-wrap">
 ${htmlContent}
+</div>
 <script>window.onload=()=>setTimeout(()=>window.print(),200);<\/script>
 </body>
 </html>`);
@@ -889,14 +911,20 @@ async function generateQuestionPDF(id){
     const labels = optionLetters(test.option_lang || 'ar');
     let questionsHtml = '';
     questions.forEach((q, i) => {
+      const optMap = {a: labels[0], b: labels[1], c: labels[2], d: labels[3]};
+      const correctLabel = optMap[q.correct] || q.correct || '';
+      const correctText = escHtml(q[`opt_${q.correct}`] || '');
+      const explanation = q.explanation_bn ? `<div class="pq-explanation"><b>ব্যাখ্যা:</b> ${escHtml(q.explanation_bn)}</div>` : '';
       questionsHtml += `<div class="pq-card">
         <b>${i+1}. ${escHtml(q.question_ar || '')}</b>
         <div class="pq-opts">
-          <div>${labels[0]}) ${escHtml(q.opt_a || '')}</div>
-          <div>${labels[1]}) ${escHtml(q.opt_b || '')}</div>
-          <div>${labels[2]}) ${escHtml(q.opt_c || '')}</div>
-          <div>${labels[3]}) ${escHtml(q.opt_d || '')}</div>
+          <div class="${q.correct==='a'?'pq-correct':''}">${labels[0]}) ${escHtml(q.opt_a || '')}</div>
+          <div class="${q.correct==='b'?'pq-correct':''}">${labels[1]}) ${escHtml(q.opt_b || '')}</div>
+          <div class="${q.correct==='c'?'pq-correct':''}">${labels[2]}) ${escHtml(q.opt_c || '')}</div>
+          <div class="${q.correct==='d'?'pq-correct':''}">${labels[3]}) ${escHtml(q.opt_d || '')}</div>
         </div>
+        <div class="pq-answer">✅ সঠিক উত্তর: ${correctLabel}) ${correctText}</div>
+        ${explanation}
       </div>`;
     });
     const html = `
@@ -1982,109 +2010,4 @@ async function changeAdminPass(){
   try{
     const s = await api('settings?id=eq.1');
     const stored = (s && s.length) ? (s[0].admin_pass || '') : _k;
-    if(cur !== stored) return showToast('বর্তমান পাসওয়ার্ড ভুল', 'error');
-    if(s && s.length) await api('settings?id=eq.1', 'PATCH', { admin_pass:nw });
-    else await api('settings', 'POST', { id:1, admin_pass:nw });
-    showToast('✅ পাসওয়ার্ড পরিবর্তন সফল');
-    document.getElementById('curPass').value = '';
-    document.getElementById('newPass').value = '';
-    document.getElementById('confPass').value = '';
-  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
-}
-
-async function saveAppDownloadLink(){
-  const link = document.getElementById('appDownloadLink').value.trim();
-  try{
-    const s = await api('settings?id=eq.1');
-    if(!s || !s.length) await api('settings', 'POST', { id:1, app_download_link:link });
-    else await api('settings?id=eq.1', 'PATCH', { app_download_link:link });
-    showToast('✅ অ্যাপ লিংক সংরক্ষিত');
-  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
-}
-
-async function loadSplashAndAnnouncement(){
-  try{
-    const s = await api('settings?id=eq.1');
-    if(s && s[0]){
-      document.getElementById('splashTitle').value = s[0].splash_title || 'জ্ঞানাঙ্গন';
-      document.getElementById('splashSubtitle').value = s[0].splash_subtitle || 'Learn smartly, be smarter.';
-      document.getElementById('splashMessage').value = s[0].splash_message || '';
-      document.getElementById('announcementTitle').value = s[0].announcement_title || '';
-      document.getElementById('announcementText').value = s[0].announcement_text || '';
-      // live notice toggle
-      const tog = document.getElementById('liveNoticeToggle');
-      if(tog) tog.checked = (s[0].show_live_notice !== false); // default true
-    }
-  }catch(e){console.error('Settings load error:', e);}
-}
-
-async function saveLiveNoticeToggle(){
-  const val = document.getElementById('liveNoticeToggle').checked;
-  try{
-    const s = await api('settings?id=eq.1');
-    if(s && s.length) await api('settings?id=eq.1','PATCH',{show_live_notice:val});
-    else await api('settings','POST',{id:1,show_live_notice:val});
-    showToast(val ? '✅ লাইভ নোটিফিকেশন চালু করা হয়েছে' : '✅ লাইভ নোটিফিকেশন বন্ধ করা হয়েছে');
-  }catch(e){showToast('❌ সংরক্ষণ ব্যর্থ','error');}
-}
-
-async function saveSplashSettings(){
-  const splash_title = document.getElementById('splashTitle').value.trim() || 'জ্ঞানাঙ্গন';
-  const splash_subtitle = document.getElementById('splashSubtitle').value.trim() || 'Learn smartly, be smarter.';
-  const splash_message = document.getElementById('splashMessage').value.trim();
-  try{
-    const s = await api('settings?id=eq.1');
-    const data = { splash_title, splash_subtitle, splash_message };
-    if(s && s.length) await api('settings?id=eq.1', 'PATCH', data);
-    else await api('settings', 'POST', { id:1, ...data });
-    showToast('✅ স্প্ল্যাশ তথ্য সংরক্ষিত');
-  }catch(e){showToast('❌ ব্যর্থ: '+e.message,'error');}
-}
-
-async function saveAnnouncement(){
-  const announcement_title = document.getElementById('announcementTitle').value.trim() || 'ঘোষণা';
-  const announcement_text = document.getElementById('announcementText').value.trim();
-  if(!announcement_text){
-    showToast('ঘোষণা লিখুন','error');
-    return;
-  }
-  const announcement_id = Date.now().toString();
-  try{
-    const s = await api('settings?id=eq.1');
-    const data = { announcement_text, announcement_id, announcement_title };
-    if(s && s.length) await api('settings?id=eq.1', 'PATCH', data);
-    else await api('settings', 'POST', { id:1, ...data });
-    showToast('✅ ঘোষণা সংরক্ষিত — সবাই পপআপ দেখতে পাবে');
-  }catch(e){showToast('❌ ব্যর্থ: '+e.message,'error');}
-}
-
-async function clearAnnouncement(){
-  if(!confirm('ঘোষণা মুছে ফেলবেন? সবার কাছে আর পপআপ দেখাবে না।')) return;
-  try{
-    await api('settings?id=eq.1', 'PATCH', { announcement_text:'', announcement_id:'' });
-    document.getElementById('announcementText').value = '';
-    showToast('✅ ঘোষণা মুছে ফেলা হয়েছে');
-  }catch(e){showToast('❌ ব্যর্থ: '+e.message,'error');}
-}
-
-window.onload = async () => {
-  try{
-    await seedDefaultBatches();
-    await seedSettings();
-    await refreshGlobalBatches();
-  }catch(_){ }
-  syncHeader();
-  if(isAdmin()){
-    goTo('screenAdminPanel');
-    switchAdminTab('dash', document.querySelector('.sidebar .nav-item'));
-  }else{
-    goTo('screenAdminLogin');
-  }
-  document.getElementById('logoBtn').onclick = () => {
-    if(isAdmin()) switchAdminTab('dash', document.querySelector('.sidebar .nav-item'));
-    else goTo('screenAdminLogin');
-  };
-};
-</script>
-</body>
-</html>
+    if(cur !== sto
