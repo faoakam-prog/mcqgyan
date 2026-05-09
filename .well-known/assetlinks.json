@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.gyanangon.app",
+        "sha256_cert_fingerprints": ["C9:C9:39:51:DE:11:82:5C:35:71:2E:14:DE:B8:7A:66:C8:AF:A9:46:48:2E:1E:AD:74:16:A8:45:D2:DE:F0:28"]
+      }
+    }]
