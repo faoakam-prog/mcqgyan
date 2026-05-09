@@ -870,9 +870,8 @@ function printInPopup(htmlContent, title='জ্ঞানাঙ্গন'){
   th { background:#f6f6f6; }
   .footer-note { margin-top:16px; font-size:11px; color:#666; text-align:center; }
   .watermark-wrap { position:relative; min-height:100vh; }
-  .watermark-wrap::before {
-    content: 'জ্ঞানাঙ্গন\A 01746839635';
-    white-space: pre;
+  .watermark-wrap::before,
+  .watermark-wrap::after {
     position: fixed;
     top: 50%; left: 50%;
     transform: translate(-50%, -50%) rotate(-35deg);
@@ -882,10 +881,11 @@ function printInPopup(htmlContent, title='জ্ঞানাঙ্গন'){
     pointer-events: none;
     z-index: 9999;
     text-align: center;
-    line-height: 1.4;
     font-family: 'Noto Serif Bengali', serif;
   }
-  @media print { .watermark-wrap::before { position:fixed; } }
+  .watermark-wrap::before { content: 'জ্ঞানাঙ্গন'; margin-top:-40px; }
+  .watermark-wrap::after  { content: '01746839635'; margin-top:40px; font-size:36px; }
+  @media print { .watermark-wrap::before, .watermark-wrap::after { position:fixed; } }
 </style>
 </head>
 <body>
