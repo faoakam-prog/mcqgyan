@@ -1104,7 +1104,10 @@ async function loadAdminDashboard(){
 }
 
 async function toggleField(id, f, v){
-  await api(`tests?id=eq.${id}`, 'PATCH', { [f]:v });
+  // আর্কাইভ করলে is_active=false একসাথে করো
+  const patch = { [f]:v };
+  if(f === 'is_archived' && v === true) patch.is_active = false;
+  await api(`tests?id=eq.${id}`, 'PATCH', patch);
   showToast('✅ আপডেট হয়েছে');
   loadAdminDashboard();
 }
