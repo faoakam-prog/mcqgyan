@@ -248,7 +248,7 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
 <div class="modal-overlay" id="liveNoticeModal">
   <div class="modal-box" style="max-width:400px" onclick="event.stopPropagation()">
     <div class="modal-title" style="color:var(--red)">🔴 চলমান লাইভ পরীক্ষা</div>
-    <p style="font-size:.85em;color:var(--gray-mid);margin-bottom:12px">এই মুহূর্তে নিচের ব্যাচগুলোতে লাইভ পরীক্ষা চলছে। তোমার ব্যাচে লগইন করে পরীক্ষায় অংশ নাও!</p>
+    <p style="font-size:.85em;color:var(--gray-mid);margin-bottom:12px">এই মুহূর্তে নিচের ব্যাচগুলোতে লাইভ পরীক্ষা চলছে। আপনার ব্যাচে লগইন করে পরীক্ষায় অংশ নিন!</p>
     <div id="liveNoticeList" style="margin-bottom:16px"></div>
     <button class="btn btn-primary" style="width:100%" onclick="closeLiveNoticeModal()">✅ বুঝেছি, লগইন করব</button>
   </div>
@@ -1085,10 +1085,19 @@ async function checkLiveExamNotice(){
     if(!s || !s[0]) return;
     if(s[0].show_live_notice === false) return; // admin বন্ধ করেছে
     // সব active পরীক্ষা আনো (সব ব্যাচের)
-    const tests = await api('tests?is_active=eq.true&select=id,name,batch_id,batches(name)');
+    const tests = await api('tests?is_active=eq.true&select=id,name,batch_id,duration_minutes,updated_at,batches(name)');
     if(!tests || !tests.length) return; // কোনো লাইভ পরীক্ষা নেই
+    // সময় শেষ হয়ে যাওয়া পরীক্ষা বাদ দাও
+    const now = Date.now();
+    const activeTests = tests.filter(t => {
+      if(!t.duration_minutes || !t.updated_at) return true;
+      const startTime = new Date(t.updated_at).getTime();
+      const endTime = startTime + (t.duration_minutes * 60 * 1000);
+      return now < endTime;
+    });
+    if(!activeTests.length) return;
     // তালিকা তৈরি করো
-    const listHtml = tests.map(t=>`
+    const listHtml = activeTests.map(t=>`
       <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fff8f8;border-left:3px solid var(--red);border-radius:6px;margin-bottom:7px">
         <span style="color:var(--red);font-size:1em">🔴</span>
         <div>
