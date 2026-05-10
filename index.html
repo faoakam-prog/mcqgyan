@@ -1077,27 +1077,21 @@ function markAnnouncementRead(){
 // ══════════════════════════════════════════════════
 async function checkLiveExamNotice(){
   try{
-    // আজকে কি দেখানো হয়েছে?
-    const todayKey = 'live_notice_' + new Date().toISOString().slice(0,10);
-    if(localStorage.getItem(todayKey)) return;
     // settings চেক করো
     const s = await api('settings?id=eq.1');
     if(!s || !s[0]) return;
     if(s[0].show_live_notice === false) return; // admin বন্ধ করেছে
-    // সব active পরীক্ষা আনো (সব ব্যাচের)
-    const tests = await api('tests?is_active=eq.true&select=id,name,batch_id,duration_minutes,updated_at,batches(name)');
+
+    // সব active পরীক্ষা আনো — সবসময় fresh API call
+    const tests = await api('tests?is_active=eq.true&select=id,name,batch_id,batches(name)');
     if(!tests || !tests.length) return; // কোনো লাইভ পরীক্ষা নেই
-    // সময় শেষ হয়ে যাওয়া পরীক্ষা বাদ দাও
-    const now = Date.now();
-    const activeTests = tests.filter(t => {
-      if(!t.duration_minutes || !t.updated_at) return true;
-      const startTime = new Date(t.updated_at).getTime();
-      const endTime = startTime + (t.duration_minutes * 60 * 1000);
-      return now < endTime;
-    });
-    if(!activeTests.length) return;
+
+    // আজকে কি popup দেখানো হয়েছে? (শুধু popup একবার, data সবসময় fresh)
+    const todayKey = 'live_notice_' + new Date().toISOString().slice(0,10);
+    if(localStorage.getItem(todayKey)) return;
+
     // তালিকা তৈরি করো
-    const listHtml = activeTests.map(t=>`
+    const listHtml = tests.map(t=>`
       <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fff8f8;border-left:3px solid var(--red);border-radius:6px;margin-bottom:7px">
         <span style="color:var(--red);font-size:1em">🔴</span>
         <div>
@@ -1107,7 +1101,7 @@ async function checkLiveExamNotice(){
       </div>`).join('');
     document.getElementById('liveNoticeList').innerHTML = listHtml;
     document.getElementById('liveNoticeModal').classList.add('show');
-    // আজকের জন্য mark করো
+    // আজকের জন্য popup mark করো
     localStorage.setItem(todayKey, '1');
   }catch(e){console.error('Live notice error:', e);}
 }
