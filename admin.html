@@ -691,9 +691,10 @@ function subjectOptionsHtml(selected = '', includeAll = false, allLabel = 'স�
   return html;
 }
 
-async function api(endpoint, method='GET', body=null){
+async function api(endpoint, method='GET', body=null, extraHeaders={}){
   const opts = { method, headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY, 'Content-Type': 'application/json' } };
   if(method === 'POST' || method === 'PATCH') opts.headers['Prefer'] = 'return=representation';
+  Object.assign(opts.headers, extraHeaders);
   if(body !== null && body !== undefined) opts.body = JSON.stringify(body);
   const res = await fetch(DB_URL + endpoint, opts);
   const txt = await res.text();
@@ -1082,7 +1083,7 @@ async function loadAdminDashboard(){
   }
   tests.forEach(t => {
     const catBadge = `<span style="font-size:.75em;background:#e8f4fd;color:var(--blue);padding:2px 7px;border-radius:10px;margin-left:5px">${CAT_LABEL[t.category]||'📝 নিয়মিত'}</span>`;
-    const schedBadge = t.scheduled_at ? `<span style="font-size:.72em;background:#fff8e1;color:var(--gold);padding:2px 7px;border-radius:10px;margin-left:4px">🕐 ${new Date(t.scheduled_at).toLocaleString('bn-BD',{timeZone:'Asia/Dhaka',dateStyle:'short',timeStyle:'short'})}</span>` : '';
+    const schedBadge = (t.scheduled_at && !t.is_active) ? `<span style="font-size:.72em;background:#fff8e1;color:var(--gold);padding:2px 7px;border-radius:10px;margin-left:4px">🕐 ${new Date(t.scheduled_at).toLocaleString('bn-BD',{timeZone:'Asia/Dhaka',dateStyle:'short',timeStyle:'short'})}</span>` : '';
     const row = `<tr>
       <td><b>${escHtml(t.name)}</b>${catBadge}${schedBadge}</td><td>${escHtml(t.batches?.name || '—')}</td>
       <td style="white-space:nowrap">
@@ -1862,8 +1863,8 @@ function uploadCSV(inputId='qbCsvFile'){
     // CSV-তে subject না থাকলে dropdown-এর subject বসাও
     qs.forEach(q => { if(!q.subject) q.subject = subject; });
     try{
-      await api('questions', 'POST', qs);
-      showToast(`✅ ${qs.length}টি প্রশ্ন যোগ হয়েছে — ${subjectLabel(subject)}`);
+      await api('questions?on_conflict=question_ar,opt_a', 'POST', qs, {'Prefer':'resolution=ignore'});
+      showToast(`✅ ${qs.length}টি প্রশ্ন যোগ হয়েছে (duplicate স্বয়ংক্রিয়ভাবে বাদ) — ${subjectLabel(subject)}`);
       document.getElementById(inputId).value = '';
       loadQuestions();
       loadBuilder();
