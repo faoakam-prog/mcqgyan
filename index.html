@@ -933,6 +933,28 @@ async function studentLogin(){
 // ══════════════════════════════════════════════════
 // STUDENT DASHBOARD
 // ══════════════════════════════════════════════════
+async function reviewLiveExam(testId){
+  try{
+    const raw = localStorage.getItem('last_review_'+testId);
+    if(raw){
+      // localStorage থেকে দেখাও
+      const d = JSON.parse(raw);
+      currentTest = { id: testId, name: d.testName, negative_mark: 0.25 };
+      currentQuestions = d.questions;
+      userAnswers = d.userAnswers;
+      isArchiveMode = true;
+      isSubjectMode = false;
+      renderResultView(d.c, d.w, d.sk, d.score);
+    }else{
+      // localStorage নেই — শুধু প্রশ্নপত্র দেখাও (উত্তরসহ)
+      showToast('পুরনো পরীক্ষার বিস্তারিত নেই, প্রশ্নপত্র দেখাচ্ছি');
+      openArchiveViewForTest(testId);
+    }
+  }catch(e){
+    showToast('লোড ব্যর্থ হয়েছে','error');
+  }
+}
+
 async function loadStudentDashboard(){
   const [aD,rD,arcD]=['activeTestsList','publishedResultsList','archivedTestsList'].map(id=>document.getElementById(id));
   const progressCard = document.getElementById('progressCard');
@@ -986,9 +1008,9 @@ async function loadStudentDashboard(){
             <span style="color:var(--green);font-weight:700">▶ শুরু</span></div>`;
         }
       }else if(t.is_active&&done){
-        aH+=`<div class="list-item list-item-done">
-          <div><h4 style="font-size:.97em">${escHtml(t.name)}${catTag}</h4><small>✅ দিয়েছেন | স্কোর: ${done.score}</small></div>
-          <span>✓</span></div>`;
+        aH+=`<div class="list-item list-item-done" onclick="reviewLiveExam(${t.id})" style="cursor:pointer" title="পর্যালোচনা দেখুন">
+          <div><h4 style="font-size:.97em">${escHtml(t.name)}${catTag}</h4><small>✅ দিয়েছেন | স্কোর: ${done.score} — <span style="color:var(--blue)">👁 পর্যালোচনা দেখুন</span></small></div>
+          <span style="color:var(--blue)">👁</span></div>`;
       }
       if(t.result_published){
         rH+=`<div class="list-item" onclick='viewLeaderboard(${t.id}, ${escHtml(JSON.stringify(t.name))})'>
@@ -1489,6 +1511,17 @@ async function submitQuiz(){
   // Subject mode-এ DB-তে attempt save করি না (কারণ test_id null)
   if(!isSubjectMode){
     await saveAttempt(score,c,w,sk);
+    // পরবর্তীতে review-এর জন্য সংরক্ষণ
+    try{
+      const reviewData = {
+        testId: currentTest.id,
+        testName: currentTest.name,
+        questions: currentQuestions,
+        userAnswers: userAnswers,
+        score, c, w, sk
+      };
+      localStorage.setItem('last_review_'+currentTest.id, JSON.stringify(reviewData));
+    }catch(_){}
   }
   renderResultView(c,w,sk,score);
 }
