@@ -368,13 +368,40 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
             <select id="qbCsvSubject"></select>
             <p class="help-text">CSV-এর সব প্রশ্ন এই বিষয়ে যোগ হবে। প্রতিবার আপলোডের আগে সঠিক বিষয় নির্বাচন করুন।</p>
           </div>
-          <button class="btn btn-primary" onclick="uploadCSV('qbCsvFile')">⬆ CSV আপলোড</button>
+          <button class="btn btn-primary" onclick="previewCSV('qbCsvFile')">⬆ CSV প্রিভিউ ও আপলোড</button>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
             <button class="btn btn-small btn-gold" style="width:auto" onclick="exportQuestionsCSV()">CSV Export</button>
             <button class="btn btn-small btn-danger" style="width:auto" onclick="deleteSelectedQuestions()">নির্বাচিত মুছুন</button>
             <button class="btn btn-small btn-primary" style="width:auto" onclick="sendSelectedToBuilder()">🛠️ নির্বাচিত দিয়ে টেস্ট বানাও</button>
           </div>
           <div id="qSubjectStats" style="margin-top:12px;font-size:.85em;color:var(--gray-mid)"></div>
+          <div id="csvPreviewSection" style="display:none;margin-top:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <b id="csvPreviewTitle" style="color:var(--green)"></b>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-small btn-outline" onclick="cancelCSVPreview()">✖ বাতিল</button>
+                <button class="btn btn-small btn-primary" onclick="saveCSVPreview()">✅ সব সেভ করুন</button>
+              </div>
+            </div>
+            <div style="overflow-x:auto;max-height:420px;overflow-y:auto;border:1px solid #ddd;border-radius:8px">
+              <table id="csvPreviewTable" style="width:100%;border-collapse:collapse;font-size:.82em">
+                <thead style="position:sticky;top:0;background:#f6f6f6;z-index:1">
+                  <tr>
+                    <th style="padding:7px 6px;border:1px solid #ddd;width:32px">#</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:180px">প্রশ্ন</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:100px">ক</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:100px">খ</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:100px">গ</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:100px">ঘ</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;width:70px">সঠিক</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:120px">ব্যাখ্যা</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;width:36px"></th>
+                  </tr>
+                </thead>
+                <tbody id="csvPreviewBody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
         <div style="overflow-x:auto">
           <table>
@@ -1851,26 +1878,97 @@ async function saveTestEdit(){
   }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
 }
 
-function uploadCSV(inputId='qbCsvFile'){
+// CSV Preview এর জন্য global array
+let _csvPreviewData = [];
+
+function previewCSV(inputId='qbCsvFile'){
   const file = document.getElementById(inputId)?.files?.[0];
   if(!file) return showToast('CSV ফাইল সিলেক্ট করুন', 'error');
   const subject = document.getElementById('qbCsvSubject')?.value || '';
   if(!subject || !VALID_SUBJECT_CODES.has(subject)) return showToast('আগে বিষয় নির্বাচন করুন', 'error');
   const reader = new FileReader();
-  reader.onload = async(e) => {
+  reader.onload = (e) => {
     const qs = parseCSV(e.target.result);
     if(!qs.length) return showToast('CSV খালি বা ফরম্যাট ভুল', 'error');
-    // CSV-তে subject না থাকলে dropdown-এর subject বসাও
     qs.forEach(q => { if(!q.subject) q.subject = subject; });
-    try{
-      await api('questions?on_conflict=question_ar,opt_a', 'POST', qs, {'Prefer':'resolution=ignore'});
-      showToast(`✅ ${qs.length}টি প্রশ্ন যোগ হয়েছে (duplicate স্বয়ংক্রিয়ভাবে বাদ) — ${subjectLabel(subject)}`);
-      document.getElementById(inputId).value = '';
-      loadQuestions();
-      loadBuilder();
-    }catch(err){ showToast('❌ আপলোড ব্যর্থ: ' + (err.message || 'অজানা'), 'error'); }
+    _csvPreviewData = qs;
+    renderCSVPreview(qs, subject);
   };
   reader.readAsText(file, 'UTF-8');
+}
+
+function renderCSVPreview(qs, subject){
+  const correctOpts = ['a','b','c','d'];
+  const lblMap = {a:'ক', b:'খ', c:'গ', d:'ঘ'};
+  const tbody = document.getElementById('csvPreviewBody');
+  tbody.innerHTML = qs.map((q, i) => `
+    <tr id="csvRow_${i}" style="border-bottom:1px solid #eee">
+      <td style="padding:5px 6px;border:1px solid #eee;text-align:center;color:var(--gray-mid)">${i+1}</td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="question_ar" rows="2" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical;direction:rtl;font-family:Amiri,serif">${escHtml(q.question_ar||'')}</textarea></td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="opt_a" rows="2" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical;direction:rtl;font-family:Amiri,serif">${escHtml(q.opt_a||'')}</textarea></td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="opt_b" rows="2" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical;direction:rtl;font-family:Amiri,serif">${escHtml(q.opt_b||'')}</textarea></td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="opt_c" rows="2" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical;direction:rtl;font-family:Amiri,serif">${escHtml(q.opt_c||'')}</textarea></td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="opt_d" rows="2" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical;direction:rtl;font-family:Amiri,serif">${escHtml(q.opt_d||'')}</textarea></td>
+      <td style="padding:4px;text-align:center">
+        <select data-i="${i}" data-f="correct" style="width:52px;padding:4px;border:1px solid #ddd;border-radius:5px;font-size:.85em">
+          ${correctOpts.map(o=>`<option value="${o}" ${q.correct===o?'selected':''}>${lblMap[o]}</option>`).join('')}
+        </select>
+      </td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="explanation_bn" rows="2" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical">${escHtml(q.explanation_bn||'')}</textarea></td>
+      <td style="padding:4px;text-align:center">
+        <button onclick="removeCSVRow(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:1.1em" title="বাদ দিন">✖</button>
+      </td>
+    </tr>`).join('');
+
+  // live edit — textarea/select পরিবর্তনে data আপডেট
+  tbody.querySelectorAll('textarea, select').forEach(el => {
+    el.addEventListener('input', () => {
+      const i = +el.dataset.i;
+      const f = el.dataset.f;
+      if(_csvPreviewData[i]) _csvPreviewData[i][f] = el.value;
+    });
+  });
+
+  document.getElementById('csvPreviewTitle').textContent = `${qs.length}টি প্রশ্ন প্রস্তুত — প্রয়োজনে এডিট করুন`;
+  document.getElementById('csvPreviewSection').style.display = 'block';
+  document.getElementById('csvPreviewSection').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function removeCSVRow(i){
+  _csvPreviewData.splice(i, 1);
+  const subject = document.getElementById('qbCsvSubject')?.value || '';
+  renderCSVPreview(_csvPreviewData, subject);
+}
+
+function cancelCSVPreview(){
+  _csvPreviewData = [];
+  document.getElementById('csvPreviewSection').style.display = 'none';
+  document.getElementById('qbCsvFile').value = '';
+}
+
+async function saveCSVPreview(){
+  if(!_csvPreviewData.length) return showToast('কোনো প্রশ্ন নেই', 'error');
+  // সর্বশেষ textarea/select এর value sync করো
+  document.querySelectorAll('#csvPreviewBody textarea, #csvPreviewBody select').forEach(el => {
+    const i = +el.dataset.i;
+    const f = el.dataset.f;
+    if(_csvPreviewData[i] !== undefined) _csvPreviewData[i][f] = el.value;
+  });
+  // খালি প্রশ্ন বাদ দাও
+  const qs = _csvPreviewData.filter(q => q.question_ar && q.question_ar.trim());
+  if(!qs.length) return showToast('কোনো প্রশ্ন নেই', 'error');
+  try{
+    await api('questions?on_conflict=question_ar,opt_a', 'POST', qs, {'Prefer':'resolution=ignore'});
+    showToast(`✅ ${qs.length}টি প্রশ্ন সেভ হয়েছে (duplicate স্বয়ংক্রিয়ভাবে বাদ)`);
+    cancelCSVPreview();
+    loadQuestions();
+    loadBuilder();
+  }catch(err){ showToast('❌ সেভ ব্যর্থ: ' + (err.message || 'অজানা'), 'error'); }
+}
+
+// পুরনো uploadCSV — পিছনের compatibility এর জন্য রাখা
+function uploadCSV(inputId='qbCsvFile'){
+  previewCSV(inputId);
 }
 
 async function loadAdminTestsForResult(){
