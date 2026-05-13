@@ -1837,13 +1837,27 @@ async function sendSelectedToBuilder(){
     // DB থেকে fetch করো (filter চললেও সব selected পাব)
     const selected = await api(`questions?id=in.(${ids.join(',')})`);
     if(!selected || !selected.length) return showToast('নির্বাচিত প্রশ্ন পাওয়া যায়নি', 'error');
-    let added = 0;
+    let added = 0, skipped = 0;
     selected.forEach(q => {
       const isDup = builderUploadedQuestions.some(x => x.question_ar === q.question_ar);
       if(!isDup){ builderUploadedQuestions.push({...q}); added++; }
+      else skipped++;
     });
-    showToast(`✅ ${added}টি প্রশ্ন বিল্ডারে পাঠানো হয়েছে`);
+    // টেস্ট বিল্ডার ট্যাবে যাও
     switchAdminTab('builder', document.querySelector('.sidebar .nav-item:nth-child(3)'));
+    // জোর করে বিল্ডার লিস্ট রেন্ডার করো (loadBuilder-এ shortcut থাকতে পারে)
+    setTimeout(() => {
+      renderBuilderList();
+      // status দেখাও
+      const statusEl = document.getElementById('builderUploadStatus');
+      if(statusEl){
+        statusEl.textContent = `✅ প্রশ্নব্যাংক থেকে ${added}টি প্রশ্ন যোগ হয়েছে${skipped ? ` (${skipped}টি duplicate বাদ)` : ''} — মোট: ${builderUploadedQuestions.length}টি`;
+        statusEl.style.display = 'block';
+      }
+    }, 100);
+    showToast(`✅ ${added}টি প্রশ্ন বিল্ডারে পাঠানো হয়েছে${skipped ? ` (${skipped}টি duplicate বাদ)` : ''}`);
+    // selection clear করো
+    selectedQuestionIds.clear();
   }catch(e){ showToast('❌ ব্যর্থ: ' + (e.message || 'অজানা'), 'error'); }
 }
 
