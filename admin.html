@@ -291,8 +291,8 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
           <div class="field"><label>পরীক্ষার নাম</label><input type="text" id="bTestName" placeholder="যেমন: ৫ম সাপ্তাহিক পরীক্ষা"></div>
           <div class="field"><label>ব্যাচ নির্বাচন</label><select id="bBatchSelect"></select></div>
           <div class="form-row">
-            <div class="field"><label>সময় (মিনিট)</label><input type="number" id="bDuration" value="25" min="5"></div>
-            <div class="field"><label>পূর্ণমান</label><input type="number" id="bTotalMarks" value="30" min="1"></div>
+            <div class="field"><label>সময় (মিনিট)</label><input type="number" id="bDuration" value="13" min="5"></div>
+            <div class="field"><label>পূর্ণমান</label><input type="number" id="bTotalMarks" value="20" min="1"></div>
           </div>
           <div class="field"><label>পাশ নম্বর (%)</label><input type="number" id="bPassPercent" value="40" min="1" max="100"></div>
           <div class="form-row">
@@ -332,9 +332,36 @@ hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
           </div>
           <div class="form-row" style="align-items:flex-end">
             <div class="field" style="margin:0"><label>CSV ফাইল নির্বাচন করুন</label><input type="file" id="builderCsvFile" accept=".csv"></div>
-            <button class="btn btn-gold" style="width:auto;padding:10px 18px" onclick="uploadCSVToBuilder()">⬆ আপলোড ও যোগ করুন</button>
+            <button class="btn btn-gold" style="width:auto;padding:10px 18px" onclick="previewCSVForBuilder()">⬆ প্রিভিউ ও যোগ করুন</button>
           </div>
           <div id="builderUploadStatus" style="margin-top:8px;font-size:.85em;color:var(--green);display:none"></div>
+          <div id="builderCsvPreviewSection" style="display:none;margin-top:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+              <b id="builderCsvPreviewTitle" style="color:var(--gold)"></b>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-small btn-outline" onclick="cancelBuilderCSVPreview()">✖ বাতিল</button>
+                <button class="btn btn-small btn-gold" onclick="confirmBuilderCSVPreview()">✅ এই প্রশ্নগুলো যোগ করুন</button>
+              </div>
+            </div>
+            <div style="overflow-x:auto;max-height:420px;overflow-y:auto;border:1px solid #ddd;border-radius:8px">
+              <table style="width:100%;border-collapse:collapse;font-size:.82em">
+                <thead style="position:sticky;top:0;background:#f6f6f6;z-index:1">
+                  <tr>
+                    <th style="padding:7px 6px;border:1px solid #ddd;width:32px">#</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:180px">প্রশ্ন</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:100px">ক</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:100px">খ</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:100px">গ</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:100px">ঘ</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;width:70px">সঠিক</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:120px">ব্যাখ্যা</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;width:36px"></th>
+                  </tr>
+                </thead>
+                <tbody id="builderCsvPreviewBody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
         <div class="card">
           <div class="card-header">প্রশ্ন তালিকা <span id="builderCountBadge" style="background:var(--green);color:#fff;padding:2px 10px;border-radius:12px;font-size:.8em;margin-left:6px">0</span></div>
@@ -1463,6 +1490,14 @@ async function deleteBatch(id){
 // ══ BUILDER: CSV আপলোড করে সরাসরি টেস্ট তৈরি ══
 
 function uploadCSVToBuilder(){
+  // পুরনো compatibility - এখন preview-এ ফরোয়ার্ড করো
+  previewCSVForBuilder();
+}
+
+// Builder এর জন্য CSV preview data
+let _builderCsvPreview = [];
+
+function previewCSVForBuilder(){
   const file = document.getElementById('builderCsvFile')?.files?.[0];
   if(!file) return showToast('CSV ফাইল সিলেক্ট করুন', 'error');
   const subject = document.getElementById('builderCsvSubject')?.value || '';
@@ -1471,22 +1506,87 @@ function uploadCSVToBuilder(){
   reader.onload = (e) => {
     const qs = parseCSV(e.target.result);
     if(!qs.length) return showToast('CSV খালি বা ফরম্যাট ভুল', 'error');
-    // CSV-তে subject না থাকলে dropdown-এর subject বসাও
     qs.forEach(q => { if(!q.subject) q.subject = subject; });
-    // পুরানো লিস্টে যোগ করো (ডুপ্লিকেট এড়াতে question_ar চেক)
-    let added = 0;
-    qs.forEach(q => {
-      const isDup = builderUploadedQuestions.some(x => x.question_ar === q.question_ar);
-      if(!isDup){ builderUploadedQuestions.push(q); added++; }
-    });
-    document.getElementById('builderCsvFile').value = '';
-    const statusEl = document.getElementById('builderUploadStatus');
-    statusEl.textContent = `✅ ${added}টি প্রশ্ন যোগ হয়েছে — ${subjectLabel(subject)} (মোট: ${builderUploadedQuestions.length}টি)`;
-    statusEl.style.display = 'block';
-    renderBuilderList();
-    showToast(`✅ ${added}টি প্রশ্ন লোড হয়েছে`);
+    _builderCsvPreview = qs;
+    renderBuilderCSVPreview(qs, subject);
   };
   reader.readAsText(file, 'UTF-8');
+}
+
+function renderBuilderCSVPreview(qs, subject){
+  const correctOpts = ['a','b','c','d'];
+  const lblMap = {a:'ক', b:'খ', c:'গ', d:'ঘ'};
+  const tbody = document.getElementById('builderCsvPreviewBody');
+  tbody.innerHTML = qs.map((q, i) => `
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:5px 6px;border:1px solid #eee;text-align:center;color:var(--gray-mid)">${i+1}</td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="question_ar" rows="2" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical;direction:rtl;font-family:Amiri,serif">${escHtml(q.question_ar||'')}</textarea></td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="opt_a" rows="2" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical;direction:rtl;font-family:Amiri,serif">${escHtml(q.opt_a||'')}</textarea></td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="opt_b" rows="2" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical;direction:rtl;font-family:Amiri,serif">${escHtml(q.opt_b||'')}</textarea></td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="opt_c" rows="2" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical;direction:rtl;font-family:Amiri,serif">${escHtml(q.opt_c||'')}</textarea></td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="opt_d" rows="2" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical;direction:rtl;font-family:Amiri,serif">${escHtml(q.opt_d||'')}</textarea></td>
+      <td style="padding:4px;text-align:center">
+        <select data-i="${i}" data-f="correct" style="width:52px;padding:4px;border:1px solid #ddd;border-radius:5px;font-size:.85em">
+          ${correctOpts.map(o=>`<option value="${o}" ${q.correct===o?'selected':''}>${lblMap[o]}</option>`).join('')}
+        </select>
+      </td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="explanation_bn" rows="2" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical">${escHtml(q.explanation_bn||'')}</textarea></td>
+      <td style="padding:4px;text-align:center">
+        <button onclick="removeBuilderCsvRow(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:1.1em" title="বাদ দিন">✖</button>
+      </td>
+    </tr>`).join('');
+
+  // live edit
+  tbody.querySelectorAll('textarea, select').forEach(el => {
+    el.addEventListener('input', () => {
+      const i = +el.dataset.i;
+      const f = el.dataset.f;
+      if(_builderCsvPreview[i]) _builderCsvPreview[i][f] = el.value;
+    });
+  });
+
+  document.getElementById('builderCsvPreviewTitle').textContent = `${qs.length}টি প্রশ্ন প্রস্তুত — প্রয়োজনে এডিট করুন (${subjectLabel(subject)})`;
+  document.getElementById('builderCsvPreviewSection').style.display = 'block';
+  document.getElementById('builderCsvPreviewSection').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function removeBuilderCsvRow(i){
+  _builderCsvPreview.splice(i, 1);
+  const subject = document.getElementById('builderCsvSubject')?.value || '';
+  renderBuilderCSVPreview(_builderCsvPreview, subject);
+}
+
+function cancelBuilderCSVPreview(){
+  _builderCsvPreview = [];
+  document.getElementById('builderCsvPreviewSection').style.display = 'none';
+  document.getElementById('builderCsvFile').value = '';
+}
+
+function confirmBuilderCSVPreview(){
+  if(!_builderCsvPreview.length) return showToast('কোনো প্রশ্ন নেই', 'error');
+  // sync last edits
+  document.querySelectorAll('#builderCsvPreviewBody textarea, #builderCsvPreviewBody select').forEach(el => {
+    const i = +el.dataset.i;
+    const f = el.dataset.f;
+    if(_builderCsvPreview[i] !== undefined) _builderCsvPreview[i][f] = el.value;
+  });
+  const qs = _builderCsvPreview.filter(q => q.question_ar && q.question_ar.trim());
+  if(!qs.length) return showToast('কোনো প্রশ্ন নেই', 'error');
+
+  // builderUploadedQuestions-এ যোগ করো (duplicate এড়াতে)
+  let added = 0;
+  qs.forEach(q => {
+    const isDup = builderUploadedQuestions.some(x => x.question_ar === q.question_ar);
+    if(!isDup){ builderUploadedQuestions.push(q); added++; }
+  });
+
+  const subject = document.getElementById('builderCsvSubject')?.value || '';
+  const statusEl = document.getElementById('builderUploadStatus');
+  statusEl.textContent = `✅ ${added}টি প্রশ্ন যোগ হয়েছে — ${subjectLabel(subject)} (মোট: ${builderUploadedQuestions.length}টি)`;
+  statusEl.style.display = 'block';
+  renderBuilderList();
+  showToast(`✅ ${added}টি প্রশ্ন বিল্ডারে যোগ হয়েছে`);
+  cancelBuilderCSVPreview();
 }
 
 function renderBuilderList(){
