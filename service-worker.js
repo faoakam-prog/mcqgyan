@@ -1,4 +1,4 @@
-const CACHE = 'gyanangon-v11';
+const CACHE = 'gyanangon-v12';
 const ASSETS = [
   '/manifest.json',
   '/icon-192.png',
