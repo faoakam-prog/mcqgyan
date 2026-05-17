@@ -910,16 +910,20 @@ function printInPopup(htmlContent, title='জ্ঞানাঙ্গন'){
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;600;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing:border-box; margin:0; padding:0; }
-  body { font-family:'Noto Serif Bengali',serif; background:#fff; color:#111; padding:20px 30px; direction:rtl; }
+  body { font-family:'Noto Serif Bengali','Amiri',serif; background:#fff; color:#111; padding:20px 30px; direction:ltr; }
   .print-header { text-align:center; border-bottom:2px solid #1a6b3c; padding-bottom:14px; margin-bottom:20px; direction:ltr; }
   .print-header h1 { font-size:20px; color:#1a6b3c; }
   .print-header h2 { font-size:16px; margin:6px 0; color:#333; }
   .print-header .meta { display:flex; justify-content:space-between; padding:0 10px; font-size:12px; color:#555; margin-top:6px; direction:ltr; }
-  .pq-card { border:1px solid #ddd; border-radius:10px; padding:12px 14px; margin-bottom:12px; }
-  .pq-opts { margin-top:8px; display:grid; gap:6px; font-size:13px; }
+  .pq-card { border:1px solid #ddd; border-radius:10px; padding:14px 16px; margin-bottom:14px; }
+  .pq-card > b { font-size:16px; line-height:1.7; }
+  .pq-opts { margin-top:10px; display:grid; grid-template-columns:1fr 1fr; gap:8px 18px; font-size:15px; }
+  .pq-opts > div { line-height:1.6; padding:2px 0; }
+  .pq-opts > div[dir="rtl"], .pq-card > b[dir="rtl"], .pq-answer[dir="rtl"], .pq-explanation[dir="rtl"] { text-align:right; }
+  .pq-opts > div[dir="ltr"], .pq-card > b[dir="ltr"], .pq-answer[dir="ltr"], .pq-explanation[dir="ltr"] { text-align:left; }
   .pq-correct { color:#1a6b3c; font-weight:bold; }
-  .pq-answer { margin-top:8px; font-size:12px; color:#1a6b3c; font-weight:bold; border-top:1px dashed #ccc; padding-top:6px; }
-  .pq-explanation { margin-top:4px; font-size:12px; color:#555; font-style:italic; }
+  .pq-answer { margin-top:10px; font-size:14px; color:#1a6b3c; font-weight:bold; border-top:1px dashed #ccc; padding-top:7px; }
+  .pq-explanation { margin-top:5px; font-size:13px; color:#555; font-style:italic; line-height:1.6; }
   table { width:100%; border-collapse:collapse; margin-top:16px; }
   th,td { border:1px solid #ccc; padding:8px 10px; text-align:left; }
   th { background:#f6f6f6; }
@@ -969,16 +973,16 @@ async function generateQuestionPDF(id){
       const optMap = {a: labels[0], b: labels[1], c: labels[2], d: labels[3]};
       const correctLabel = optMap[q.correct] || q.correct || '';
       const correctText = escHtml(q[`opt_${q.correct}`] || '');
-      const explanation = q.explanation_bn ? `<div class="pq-explanation"><b>ব্যাখ্যা:</b> ${escHtml(q.explanation_bn)}</div>` : '';
+      const explanation = q.explanation_bn ? `<div class="pq-explanation" dir="auto"><b>ব্যাখ্যা:</b> ${escHtml(q.explanation_bn)}</div>` : '';
       questionsHtml += `<div class="pq-card">
-        <b>${i+1}. ${escHtml(q.question_ar || '')}</b>
+        <b dir="auto" style="display:block">${i+1}. ${escHtml(q.question_ar || '')}</b>
         <div class="pq-opts">
-          <div class="${q.correct==='a'?'pq-correct':''}">${labels[0]}) ${escHtml(q.opt_a || '')}</div>
-          <div class="${q.correct==='b'?'pq-correct':''}">${labels[1]}) ${escHtml(q.opt_b || '')}</div>
-          <div class="${q.correct==='c'?'pq-correct':''}">${labels[2]}) ${escHtml(q.opt_c || '')}</div>
-          <div class="${q.correct==='d'?'pq-correct':''}">${labels[3]}) ${escHtml(q.opt_d || '')}</div>
+          <div dir="auto" class="${q.correct==='a'?'pq-correct':''}">${labels[0]}) ${escHtml(q.opt_a || '')}</div>
+          <div dir="auto" class="${q.correct==='b'?'pq-correct':''}">${labels[1]}) ${escHtml(q.opt_b || '')}</div>
+          <div dir="auto" class="${q.correct==='c'?'pq-correct':''}">${labels[2]}) ${escHtml(q.opt_c || '')}</div>
+          <div dir="auto" class="${q.correct==='d'?'pq-correct':''}">${labels[3]}) ${escHtml(q.opt_d || '')}</div>
         </div>
-        <div class="pq-answer">✅ সঠিক উত্তর: ${correctLabel}) ${correctText}</div>
+        <div class="pq-answer" dir="auto">✅ সঠিক উত্তর: ${correctLabel}) ${correctText}</div>
         ${explanation}
       </div>`;
     });
