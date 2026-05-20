@@ -1,0 +1,2351 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a6b3c">
+<title>জ্ঞানাঙ্গন — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;500;600;700&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --green:#1a6b3c; --green-dk:#145530; --green-lt:#2d9e5f; --green-pale:#e8f5ee;
+  --gold:#E87722; --gold-lt:#F5A623; --gold-pale:#FEF0E0;
+  --red:#c0392b; --red-pale:#fdf0ef;
+  --blue:#1a1a1a; --blue-pale:#f0f0f0;
+  --gray:#4a4a4a; --gray-lt:#f5f5f5; --gray-mid:#9a9a9a;
+  --white:#fff; --border:#dde3e8;
+  --shadow:0 2px 12px rgba(0,0,0,.08); --shadow-lg:0 8px 30px rgba(0,0,0,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Serif Bengali',serif;background:#eef4f0;color:var(--gray);line-height:1.6}
+
+/* HEADER */
+.header{background:linear-gradient(135deg,#1a6b3c,#145530);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.2)}
+.header-left{display:flex;align-items:center;gap:12px}
+.logo{font-size:1.2em;font-weight:700;cursor:pointer;user-select:none;letter-spacing:.5px}
+.logo span{color:var(--gold-lt)}
+.logout-btn{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);color:#fff;padding:5px 12px;border-radius:15px;font-size:.8em;cursor:pointer;display:none;font-family:inherit;transition:.2s}
+.logout-btn:hover{background:rgba(255,255,255,.28)}
+.timer-box{background:rgba(255,255,255,.15);padding:5px 14px;border-radius:20px;font-weight:700;display:none;border:1px solid rgba(255,255,255,.3);font-size:.95em;min-width:70px;text-align:center}
+.timer-box.show{display:block}
+.timer-box.danger{background:var(--red);border-color:transparent;animation:blink .8s infinite}
+@keyframes blink{50%{opacity:.6}}
+
+/* SCREENS */
+.screen{display:none;min-height:calc(100vh - 50px);padding:18px 10px}
+.screen.active{display:block;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.container{max-width:700px;margin:0 auto}
+
+/* CARDS */
+.card{background:var(--white);border-radius:14px;padding:20px;margin-bottom:14px;box-shadow:var(--shadow)}
+.card-header{font-size:1.05em;font-weight:700;color:var(--green);margin-bottom:15px;border-bottom:2px solid var(--green-pale);padding-bottom:8px;display:flex;align-items:center;gap:8px}
+
+/* BUTTONS */
+.btn{width:100%;padding:12px;border:none;border-radius:10px;font-family:inherit;font-size:1em;font-weight:700;cursor:pointer;transition:all .2s}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--green);color:#fff}.btn-primary:hover{background:var(--green-dk)}
+.btn-gold{background:var(--gold);color:#fff}.btn-gold:hover{background:#cc6200}
+.btn-danger{background:var(--red);color:#fff}
+.btn-outline{background:transparent;border:2px solid var(--green);color:var(--green)}.btn-outline:hover{background:var(--green-pale)}
+.btn-video{background:#e74c3c;color:#fff}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-small{width:auto;padding:5px 10px;font-size:.78em;margin:2px;border-radius:7px}
+.btn-wa{background:#25D366;color:#fff}
+
+/* FORM */
+.field{margin-bottom:13px}
+.field label{display:block;font-size:.88em;font-weight:600;color:var(--green);margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:.96em;background:var(--gray-lt);transition:border-color .2s}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--green);background:#fff}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.help-text{font-size:.8em;color:var(--gray-mid);margin-top:3px}
+
+/* LIST */
+.list-item{background:var(--white);border-left:4px solid var(--green);padding:14px 16px;margin-bottom:10px;border-radius:10px;box-shadow:var(--shadow);display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:all .2s}
+.list-item:hover{background:var(--green-pale);transform:translateX(2px)}
+.list-item-arc{border-left-color:var(--blue)}.list-item-arc:hover{background:var(--blue-pale)}
+.list-item-done{border-left-color:var(--gray-mid);opacity:.65;cursor:default}
+.list-item-done:hover{background:var(--white);transform:none}
+
+/* QUIZ */
+.progress-bar{background:var(--green-pale);border-radius:999px;height:6px;overflow:hidden;margin-bottom:14px}
+.progress-fill{background:var(--green);height:100%;border-radius:999px;transition:width .3s}
+.q-card{background:var(--white);padding:20px;border-radius:14px;margin-bottom:13px;border-right:4px solid var(--green);box-shadow:var(--shadow)}
+.q-num{font-size:.8em;color:var(--gray-mid);margin-bottom:6px}
+.q-text{font-family:'Amiri',serif;font-size:1.3em;direction:rtl;text-align:right;margin-bottom:14px;color:#1a1a1a;line-height:1.9}
+.opt-btn{display:flex;align-items:center;gap:12px;padding:10px 13px;background:var(--gray-lt);border:1.5px solid var(--border);border-radius:9px;cursor:pointer;direction:rtl;font-family:'Amiri',serif;font-size:1.1em;width:100%;margin-bottom:8px;transition:all .15s;text-align:right}
+.opt-btn:hover{background:var(--green-pale);border-color:var(--green)}
+.opt-btn.selected{background:var(--green-pale);border-color:var(--green);font-weight:bold}
+.opt-letter{min-width:32px;height:32px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:.85em;flex-shrink:0}
+.opt-btn.selected .opt-letter{background:var(--green);color:#fff}
+
+/* RESULT */
+.result-banner{border-radius:14px;padding:24px 20px;text-align:center;margin-bottom:16px;color:#fff}
+.result-banner.pass{background:linear-gradient(135deg,#1a6b3c,#2d9e5f)}
+.result-banner.close{background:linear-gradient(135deg,#E87722,#F5A623)}
+.result-banner.fail{background:linear-gradient(135deg,#c0392b,#e74c3c)}
+.result-banner.practice{background:linear-gradient(135deg,var(--blue),#2a5aa8)}
+.score-big{font-size:2.6em;font-weight:700;margin:8px 0}
+.feedback-msg{font-size:1.05em;font-weight:700;margin-top:8px}
+.score-sub{font-size:.9em;opacity:.88;margin-top:6px;line-height:1.5}
+.stat-grid{display:flex;justify-content:space-around;text-align:center;padding:6px 0}
+.stat-val{font-size:1.5em;font-weight:700}
+.stat-lbl{font-size:.78em;color:var(--gray-mid);margin-top:2px}
+
+/* ADMIN */
+.admin-wrap{display:flex;min-height:calc(100vh - 50px)}
+.sidebar{width:220px;background:#fff;border-right:1px solid var(--border);padding:10px 0;flex-shrink:0}
+.nav-item{padding:12px 18px;cursor:pointer;font-weight:600;color:var(--gray);border-left:3px solid transparent;font-size:.9em;transition:all .15s;display:flex;align-items:center;gap:7px}
+.nav-item:hover{background:var(--green-pale);color:var(--green)}
+.nav-item.active{background:var(--green-pale);color:var(--green);border-left-color:var(--green)}
+.nav-item.danger{color:var(--red)}.nav-item.danger:hover{background:var(--red-pale)}
+.admin-content{flex:1;padding:20px;overflow-y:auto;max-height:calc(100vh - 50px)}
+.admin-page{display:none}.admin-page.active{display:block;animation:fadeIn .25s}
+
+/* TABLES */
+table{width:100%;border-collapse:collapse;font-size:.88em;background:#fff;border-radius:10px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:20px}
+th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--border)}
+th{background:var(--gray-lt);color:var(--green);font-weight:700}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--green-pale)}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex;animation:fadeIn .2s}
+.modal-box{background:#fff;border-radius:16px;padding:26px;max-width:420px;width:100%;box-shadow:var(--shadow-lg)}
+.modal-title{font-size:1.1em;font-weight:700;color:var(--green);margin-bottom:12px}
+.modal-info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;font-size:.9em}
+.modal-actions{display:flex;gap:10px;margin-top:16px;justify-content:flex-end}.modal-actions .btn{width:auto;min-width:120px}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#2d3748;color:#fff;padding:10px 22px;border-radius:10px;z-index:1000;display:none;font-size:.9em;box-shadow:var(--shadow-lg);max-width:90vw;text-align:center;pointer-events:none}
+.toast.success{background:var(--green)}.toast.error{background:var(--red)}.toast.info{background:var(--blue)}
+.toast.show{display:block;animation:toastIn .3s}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* PASSWORD TOGGLE */
+.pass-wrap{position:relative}
+.pass-wrap input{padding-right:44px}
+.pass-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1em;color:var(--gray-mid);padding:4px;line-height:1}
+
+/* MISC */
+hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
+.section-title{font-size:1em;font-weight:700;color:var(--green);margin:18px 0 10px;display:flex;align-items:center;gap:6px}
+.empty-msg{text-align:center;padding:28px;color:var(--gray-mid);font-size:.9em}
+.badge{padding:3px 9px;border-radius:12px;font-size:.78em;font-weight:700}
+.badge-g{background:#d4edda;color:#155724}.badge-r{background:#f8d7da;color:#721c24}.badge-b{background:var(--blue-pale);color:var(--blue)}
+
+/* APP SPLASH */
+.splash-overlay{position:fixed;inset:0;background:linear-gradient(160deg,#0f4d29,#1a6b3c,#1a6b3c,#145530);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+.splash-box{background:#fff;border-radius:22px;padding:28px 22px;max-width:380px;width:100%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.3)}
+.splash-logo{height:90px;width:auto;border-radius:10px;margin-bottom:10px}
+.splash-title{font-size:1.5em;font-weight:700;color:var(--green);margin-bottom:4px}
+.splash-subtitle{font-size:.85em;color:var(--gray-mid);margin-bottom:22px}
+.splash-divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--gray-mid);font-size:.8em}
+.splash-divider::before,.splash-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.btn-app-download{background:linear-gradient(135deg,#1a6b3c,#2d9e5f);color:#fff;border:none;padding:13px 16px;border-radius:12px;width:100%;font-family:inherit;font-size:1em;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s;margin-bottom:10px}
+.btn-app-download:hover{background:linear-gradient(135deg,#145530,#1a6b3c);transform:scale(.98)}
+.btn-web-continue{background:transparent;color:var(--green);border:2px solid var(--green);padding:11px 16px;border-radius:12px;width:100%;font-family:inherit;font-size:.95em;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-web-continue:hover{background:var(--green-pale)}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .admin-wrap{flex-direction:column}
+  .sidebar{width:100%;display:flex;overflow-x:auto;border-right:none;border-bottom:1px solid var(--border);padding:5px 0}
+  .nav-item{white-space:nowrap;border-left:none;border-bottom:3px solid transparent;padding:9px 13px;font-size:.82em}
+  .nav-item.active{border-left:none;border-bottom-color:var(--green)}
+  .admin-content{max-height:unset}
+  .form-row-3{grid-template-columns:1fr 1fr}
+}
+@media(max-width:480px){
+  .form-row-3,.form-row{grid-template-columns:1fr}
+}
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo" id="logoBtn">জ্ঞানাঙ্গন <span>Admin</span></div>
+  </div>
+  <button class="logout-btn" id="adminLogoutBtn" onclick="adminLogout()">লগআউট</button>
+</div>
+
+<!-- ADMIN LOGIN -->
+<div class="screen" id="screenAdminLogin">
+  <div class="container" style="max-width:400px;margin-top:50px">
+    <div class="card">
+      <h2 style="text-align:center;color:var(--blue);margin-bottom:6px">🔐 Admin প্যানেল</h2>
+      <p style="text-align:center;font-size:.8em;color:var(--gray-mid);margin-bottom:18px">অ্যাডমিন পাসওয়ার্ড দিয়ে প্রবেশ করুন</p>
+      <div class="field">
+        <label>পাসওয়ার্ড</label>
+        <div class="pass-wrap">
+          <input type="password" id="adminPass" placeholder="পাসওয়ার্ড দিন" onkeydown="if(event.key==='Enter')adminLogin()">
+          <button class="pass-eye" type="button" onclick="pwToggle('adminPass',this)">👁</button>
+        </div>
+      </div>
+      <button class="btn btn-blue" onclick="adminLogin()">প্রবেশ করুন</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="screen" id="screenAdminPanel" style="padding:0">
+  <div class="admin-wrap">
+    <div class="sidebar">
+      <div class="nav-item active" onclick="switchAdminTab('dash',this)">📊 ড্যাশবোর্ড</div>
+      <div class="nav-item" onclick="switchAdminTab('batches',this)">📁 ব্যাচ</div>
+      <div class="nav-item" onclick="switchAdminTab('builder',this)">🛠️ টেস্ট বিল্ডার</div>
+      <div class="nav-item" onclick="switchAdminTab('questions',this)">❓ প্রশ্ন ব্যাংক</div>
+      <div class="nav-item" onclick="switchAdminTab('results',this)">🏆 রেজাল্ট</div>
+      <div class="nav-item" onclick="switchAdminTab('students',this)">👥 স্টুডেন্টস</div>
+      <div class="nav-item" onclick="switchAdminTab('settings',this)">⚙️ সেটিং</div>
+      <hr class="div" style="margin:8px 16px">
+      <div class="nav-item danger" onclick="adminLogout()">🚪 লগআউট</div>
+    </div>
+    <div class="admin-content">
+
+      <div class="admin-page active" id="admin-dash">
+        <div class="card">
+          <div class="field" style="margin:0"><select id="dashAdminBatch" onchange="loadAdminDashboard()"><option value="">সব ব্যাচ</option></select></div>
+        </div>
+        <div class="section-title" style="color:var(--green)">🟢 চলমান পরীক্ষাসমূহ</div>
+        <div style="overflow-x:auto"><table><thead><tr><th>পরীক্ষা</th><th>ব্যাচ</th><th>অ্যাকশন</th></tr></thead><tbody id="adminActiveTestsBody"></tbody></table></div>
+        <div class="section-title" style="color:var(--red)">🔴 নিষ্ক্রিয় পরীক্ষাসমূহ</div>
+        <div style="overflow-x:auto"><table><thead><tr><th>পরীক্ষা</th><th>ব্যাচ</th><th>অ্যাকশন</th></tr></thead><tbody id="adminInactiveTestsBody"></tbody></table></div>
+        <div class="section-title" style="color:var(--blue)">📚 আর্কাইভড লাইব্রেরি</div>
+        <div style="overflow-x:auto"><table><thead><tr><th>পরীক্ষা</th><th>ব্যাচ</th><th>অ্যাকশন</th></tr></thead><tbody id="adminArchivedTestsBody"></tbody></table></div>
+      </div>
+
+      <div class="admin-page" id="admin-batches">
+        <div class="card">
+          <div class="card-header">➕ নতুন ব্যাচ</div>
+          <div class="form-row">
+            <div class="field"><label>ব্যাচের নাম</label><input type="text" id="newBatchName" placeholder="নাম"></div>
+            <div class="field"><label>পাসওয়ার্ড</label><input type="text" id="newBatchPass" placeholder="পাসওয়ার্ড"></div>
+          </div>
+          <button class="btn btn-primary btn-small" style="width:auto" onclick="createBatch()">✅ ব্যাচ যোগ করুন</button>
+        </div>
+        <div id="adminBatchList"></div>
+      </div>
+
+      <div class="admin-page" id="admin-batch-edit">
+        <button class="btn btn-outline btn-small" style="margin-bottom:14px" onclick="switchAdminTab('batches',document.querySelector('.sidebar .nav-item:nth-child(2)'))">← ব্যাচ তালিকায় ফিরুন</button>
+        <div class="card" style="background:linear-gradient(135deg,var(--green),var(--green-lt));color:#fff;margin-bottom:18px">
+          <h2 id="editBatchTitle" style="font-size:1.1em">ব্যাচ এডিট</h2>
+        </div>
+        <div class="card">
+          <div class="card-header">📝 ব্যাচ তথ্য</div>
+          <div class="field"><label>ব্যাচের নাম</label><input type="text" id="editBatchName"></div>
+          <div class="field"><label>লগইন পাসওয়ার্ড</label><input type="text" id="editBatchPassword"></div>
+          <div class="field"><label>শিট পাসওয়ার্ড (অপশনাল)</label><input type="text" id="editSheetPassword" placeholder="না থাকলে ফাঁকা রাখুন"></div>
+          <button class="btn btn-primary" onclick="saveBatchInfo()">💾 তথ্য সংরক্ষণ</button>
+        </div>
+        <div class="card">
+          <div class="card-header">📢 নোটিশ ও লিংক</div>
+          <div class="field"><label>নোটিশ / ঘোষণা টেক্সট</label><textarea id="editNotice" rows="4" placeholder="শিক্ষার্থীদের জন্য ঘোষণা, নোটিশ, বা যেকোনো তথ্য..."></textarea></div>
+          <div class="field"><label>📎 নোটিশ লিংক</label><input type="text" id="editNoticeLink" placeholder="https://drive.google.com/... বা অন্য লিংক"></div>
+          <p class="help-text">লিংক দিলে নোটিশ কার্ডে একটি বাটন দেখাবে।</p>
+          <button class="btn btn-gold" onclick="saveNotice()">💾 নোটিশ সংরক্ষণ</button>
+        </div>
+        <div class="card">
+          <div class="card-header">📅 ক্লাস রুটিন</div>
+          <div id="routineFileInfo" style="display:none;margin-bottom:10px;padding:10px;background:var(--green-pale);border-radius:8px;font-size:.85em">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:var(--green)">✅ আপলোডকৃত ফাইল আছে</span>
+              <button class="btn btn-small btn-danger" onclick="deleteUploadedFile('routine')">🗑 মুছুন</button>
+            </div>
+          </div>
+          <div class="field"><label>Google Drive / যেকোনো লিংক</label><input type="text" id="editRoutineLink" placeholder="https://drive.google.com/..."></div>
+          <p class="help-text" style="margin-bottom:8px">অথবা সরাসরি ফাইল আপলোড করুন (PDF/ছবি):</p>
+          <div class="field"><input type="file" id="routineFile" accept=".pdf,.jpg,.jpeg,.png"></div>
+          <button class="btn btn-outline" onclick="saveRoutineLink()">🔗 রুটিন সংরক্ষণ</button>
+        </div>
+        <div class="card">
+          <div class="card-header">📂 লেকচার শিট</div>
+          <div id="sheetFileInfo" style="display:none;margin-bottom:10px;padding:10px;background:var(--green-pale);border-radius:8px;font-size:.85em">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:var(--green)">✅ আপলোডকৃত ফাইল আছে</span>
+              <button class="btn btn-small btn-danger" onclick="deleteUploadedFile('sheet')">🗑 মুছুন</button>
+            </div>
+          </div>
+          <div class="field"><label>Google Drive / যেকোনো লিংক</label><input type="text" id="editSheetLink" placeholder="https://drive.google.com/..."></div>
+          <p class="help-text" style="margin-bottom:8px">অথবা সরাসরি ফাইল আপলোড করুন (PDF/ছবি):</p>
+          <div class="field"><input type="file" id="sheetFile" accept=".pdf,.jpg,.jpeg,.png"></div>
+          <button class="btn btn-outline" onclick="saveSheetLink()">🔗 শিট সংরক্ষণ</button>
+        </div>
+        <div class="card">
+          <div class="card-header">📹 ভিডিও ক্লাস</div>
+          <div class="field"><label>YouTube / Google Drive লিংক</label><input type="text" id="editVideoLink" placeholder="https://youtube.com/... বা https://drive.google.com/..."></div>
+          <button class="btn btn-video" onclick="saveVideoLink()">💾 ভিডিও লিংক সংরক্ষণ</button>
+        </div>
+      </div>
+
+      <div class="admin-page" id="admin-builder">
+        <div class="card">
+          <div class="card-header">টেস্ট সেটআপ</div>
+          <div class="field"><label>পরীক্ষার নাম</label><input type="text" id="bTestName" placeholder="যেমন: ৫ম সাপ্তাহিক পরীক্ষা"></div>
+          <div class="field"><label>ব্যাচ নির্বাচন</label><select id="bBatchSelect"></select></div>
+          <div class="form-row">
+            <div class="field"><label>সময় (মিনিট)</label><input type="number" id="bDuration" value="13" min="5"></div>
+            <div class="field"><label>পূর্ণমান</label><input type="number" id="bTotalMarks" value="20" min="1"></div>
+          </div>
+          <div class="field"><label>পাশ নম্বর (%)</label><input type="number" id="bPassPercent" value="40" min="1" max="100"></div>
+          <div class="form-row">
+            <div class="field"><label>নেগেটিভ মার্ক (প্রতি ভুলে)</label><input type="number" id="bNegMark" value="0.25" step="0.25" min="0"></div>
+            <div class="field">
+              <label>অপশন লেবেল ভাষা</label>
+              <select id="bOptLang" onchange="renderBuilderList()">
+                <option value="ar">আরবি — أ ب ج د</option>
+                <option value="bn">বাংলা — ক খ গ ঘ</option>
+                <option value="en">ইংরেজি — A B C D</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>📂 পরীক্ষার ধরন (Category)</label>
+            <select id="bCategory">
+              <option value="regular">📝 নিয়মিত পরীক্ষা</option>
+              <option value="revision">🔄 রিভিশন পরীক্ষা</option>
+              <option value="mega_revision">🔁 মেগা রিভিশন</option>
+              <option value="full_model">📋 ফুল মডেল টেস্ট</option>
+              <option value="extra">➕ অতিরিক্ত পরীক্ষা</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>🕐 শিডিউল (ঐচ্ছিক) — নির্দিষ্ট সময়ে স্বয়ংক্রিয়ভাবে চালু হবে</label>
+            <input type="datetime-local" id="bScheduledAt">
+            <p class="help-text">ফাঁকা রাখলে এখনই চালু থাকবে না — পরে manually চালু করতে হবে।</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">📂 CSV থেকে প্রশ্ন আপলোড করুন</div>
+          <p class="help-text" style="margin-bottom:10px">CSV আপলোড করলে প্রশ্নগুলো স্বয়ংক্রিয়ভাবে নিচের তালিকায় যোগ হবে।</p>
+          <div class="field" style="margin-bottom:10px">
+            <label>📌 বিষয় <span style="color:var(--red)">*</span></label>
+            <select id="builderCsvSubject"></select>
+            <p class="help-text">এই বিষয় CSV-এর সব প্রশ্নে বসবে।</p>
+          </div>
+          <div class="form-row" style="align-items:flex-end">
+            <div class="field" style="margin:0"><label>CSV ফাইল নির্বাচন করুন</label><input type="file" id="builderCsvFile" accept=".csv"></div>
+            <button class="btn btn-gold" style="width:auto;padding:10px 18px" onclick="previewCSVForBuilder()">⬆ প্রিভিউ ও যোগ করুন</button>
+          </div>
+          <div id="builderUploadStatus" style="margin-top:8px;font-size:.85em;color:var(--green);display:none"></div>
+          <div id="builderCsvPreviewSection" style="display:none;margin-top:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+              <b id="builderCsvPreviewTitle" style="color:var(--gold)"></b>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-small btn-outline" onclick="cancelBuilderCSVPreview()">✖ বাতিল</button>
+                <button class="btn btn-small btn-gold" onclick="confirmBuilderCSVPreview()">✅ এই প্রশ্নগুলো যোগ করুন</button>
+              </div>
+            </div>
+            <div style="overflow-x:auto;max-height:420px;overflow-y:auto;border:1px solid #ddd;border-radius:8px">
+              <table style="width:100%;border-collapse:collapse;font-size:.82em">
+                <thead style="position:sticky;top:0;background:#f6f6f6;z-index:1">
+                  <tr>
+                    <th style="padding:7px 6px;border:1px solid #ddd;width:32px">#</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:180px">প্রশ্ন</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:100px">ক</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:100px">খ</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:100px">গ</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:100px">ঘ</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;width:70px">সঠিক</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:120px">ব্যাখ্যা</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;width:36px"></th>
+                  </tr>
+                </thead>
+                <tbody id="builderCsvPreviewBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">প্রশ্ন তালিকা <span id="builderCountBadge" style="background:var(--green);color:#fff;padding:2px 10px;border-radius:12px;font-size:.8em;margin-left:6px">0</span></div>
+          <div class="form-row" style="margin-bottom:10px">
+            <div class="field" style="margin:0"><input type="text" id="builderSearch" placeholder="🔍 প্রশ্ন খুঁজুন..." oninput="filterBuilderList()"></div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn btn-small btn-primary" onclick="selectAllBuilder()">সব নির্বাচন</button>
+              <button class="btn btn-small btn-danger" onclick="clearBuilderList()">🗑 সব মুছুন</button>
+            </div>
+          </div>
+          <div id="builderList" style="max-height:380px;overflow:auto;border:1px solid var(--border);border-radius:10px;padding:8px;background:#fff">
+            <div class="empty-msg">এখনো কোনো প্রশ্ন নেই — CSV আপলোড করুন</div>
+          </div>
+          <button class="btn btn-primary" style="margin-top:14px" onclick="saveTestFromBuilder()">✅ টেস্ট তৈরি করুন</button>
+        </div>
+      </div>
+
+      <div class="admin-page" id="admin-questions">
+        <div class="card">
+          <div class="card-header">❓ প্রশ্ন ব্যাংক</div>
+          <div class="form-row">
+            <div class="field"><label>সার্চ</label><input type="text" id="qSearch" placeholder="প্রশ্ন / অপশন / উত্তর খুঁজুন" oninput="loadQuestions()"></div>
+            <div class="field"><label>বিষয় ফিল্টার</label><select id="qSubjectFilter" onchange="loadQuestions()"></select></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>টেস্ট ফিল্টার</label><select id="qTestFilter" onchange="loadQuestions()"><option value="">সব টেস্ট</option></select></div>
+            <div class="field"><label>CSV ফাইল</label><input type="file" id="qbCsvFile" accept=".csv"></div>
+          </div>
+          <div class="field">
+            <label>📌 আপলোডের সময় বিষয় <span style="color:var(--red)">*</span></label>
+            <select id="qbCsvSubject"></select>
+            <p class="help-text">CSV-এর সব প্রশ্ন এই বিষয়ে যোগ হবে। প্রতিবার আপলোডের আগে সঠিক বিষয় নির্বাচন করুন।</p>
+          </div>
+          <button class="btn btn-primary" onclick="previewCSV('qbCsvFile')">⬆ CSV প্রিভিউ ও আপলোড</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+            <button class="btn btn-small btn-gold" style="width:auto" onclick="exportQuestionsCSV()">CSV Export</button>
+            <button class="btn btn-small btn-danger" style="width:auto" onclick="deleteSelectedQuestions()">নির্বাচিত মুছুন</button>
+            <button class="btn btn-small btn-primary" style="width:auto" onclick="sendSelectedToBuilder()">🛠️ নির্বাচিত দিয়ে টেস্ট বানাও</button>
+          </div>
+          <div id="qSubjectStats" style="margin-top:12px;font-size:.85em;color:var(--gray-mid)"></div>
+          <div id="csvPreviewSection" style="display:none;margin-top:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <b id="csvPreviewTitle" style="color:var(--green)"></b>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-small btn-outline" onclick="cancelCSVPreview()">✖ বাতিল</button>
+                <button class="btn btn-small btn-primary" onclick="saveCSVPreview()">✅ সব সেভ করুন</button>
+              </div>
+            </div>
+            <div style="overflow-x:auto;max-height:420px;overflow-y:auto;border:1px solid #ddd;border-radius:8px">
+              <table id="csvPreviewTable" style="width:100%;border-collapse:collapse;font-size:.82em">
+                <thead style="position:sticky;top:0;background:#f6f6f6;z-index:1">
+                  <tr>
+                    <th style="padding:7px 6px;border:1px solid #ddd;width:32px">#</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:180px">প্রশ্ন</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:100px">ক</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:100px">খ</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:100px">গ</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:100px">ঘ</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;width:70px">সঠিক</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;min-width:120px">ব্যাখ্যা</th>
+                    <th style="padding:7px 6px;border:1px solid #ddd;width:36px"></th>
+                  </tr>
+                </thead>
+                <tbody id="csvPreviewBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th><input type="checkbox" id="qSelectAll" onchange="toggleAllQuestions(this.checked)"></th><th>#</th><th>প্রশ্ন</th><th>বিষয়</th><th>সঠিক</th><th>অ্যাকশন</th></tr></thead>
+            <tbody id="adminQBody"><tr><td colspan="6" class="empty-msg">লোড হচ্ছে...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="admin-page" id="admin-results">
+        <div class="card">
+          <div class="form-row">
+            <div class="field"><label>ব্যাচ</label><select id="resAdminBatch" onchange="loadAdminTestsForResult()"><option value="">নির্বাচন করুন</option></select></div>
+            <div class="field"><label>টেস্ট</label><select id="resAdminTest" onchange="loadAdminResults()"><option value="">নির্বাচন করুন</option></select></div>
+          </div>
+          <button class="btn btn-gold" onclick="printResultPDF()">⬇ PDF ডাউনলোড করুন (মাস্কড)</button>
+        </div>
+        <div id="adminResultDisplay" style="display:none">
+          <div class="card">
+            <div style="text-align:center;border-bottom:2px solid var(--green);padding-bottom:14px;margin-bottom:14px">
+              <h2 id="adminResTitle" style="color:var(--green)">ফলাফল শিট</h2>
+              <p id="adminResSubTitle" style="font-size:.88em;color:var(--gray-mid)"></p>
+            </div>
+            <div style="overflow-x:auto">
+              <table><thead><tr><th>র‍্যাঙ্ক</th><th>নাম</th><th>মোবাইল</th><th>স্কোর</th></tr></thead><tbody id="adminResBody"></tbody></table>
+            </div>
+            <p style="font-size:.73em;color:var(--gray-mid);margin-top:8px;text-align:center">* অ্যাডমিন ভিউ — পূর্ণ তথ্য প্রদর্শিত</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-page" id="admin-students">
+        <div class="card">
+          <div class="form-row">
+            <div class="field"><label>ব্যাচ ফিল্টার</label><select id="stuFilterBatch" onchange="loadAdminStudents()"><option value="">সব ব্যাচ</option></select></div>
+            <div class="field"><label>খুঁজুন</label><input type="text" id="stuSearch" placeholder="নাম বা নম্বর..." oninput="filterStudents()"></div>
+          </div>
+          <button class="btn btn-danger btn-small" style="width:auto;margin-top:6px" onclick="deleteSelectedStudents()">🗑 নির্বাচিত মুছুন</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th><input type="checkbox" id="stuSelectAll" onchange="toggleAllStudents(this.checked)"></th><th>#</th><th>নাম</th><th>মোবাইল</th><th>ব্যাচ</th><th>অ্যাকশন</th></tr></thead>
+            <tbody id="adminStBody"><tr><td colspan="6" class="empty-msg">লোড হচ্ছে...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="admin-page" id="admin-settings">
+        <div class="card">
+          <div class="card-header">🔑 অ্যাডমিন পাসওয়ার্ড পরিবর্তন</div>
+          <div class="field"><label>বর্তমান পাসওয়ার্ড</label>
+            <div class="pass-wrap"><input type="password" id="curPass" placeholder="বর্তমান পাসওয়ার্ড">
+            <button class="pass-eye" type="button" onclick="pwToggle('curPass',this)">👁</button></div>
+          </div>
+          <div class="field"><label>নতুন পাসওয়ার্ড</label>
+            <div class="pass-wrap"><input type="password" id="newPass" placeholder="কমপক্ষে ৬ অক্ষর">
+            <button class="pass-eye" type="button" onclick="pwToggle('newPass',this)">👁</button></div>
+          </div>
+          <div class="field"><label>নতুন পাসওয়ার্ড নিশ্চিত করুন</label>
+            <div class="pass-wrap"><input type="password" id="confPass" placeholder="আবার লিখুন">
+            <button class="pass-eye" type="button" onclick="pwToggle('confPass',this)">👁</button></div>
+          </div>
+          <button class="btn btn-primary" onclick="changeAdminPass()">🔒 পাসওয়ার্ড পরিবর্তন করুন</button>
+        </div>
+        <div class="card">
+          <div class="card-header">📲 অ্যাপ ডাউনলোড লিংক</div>
+          <p style="font-size:.83em;color:var(--gray-mid);margin-bottom:10px">এখানে সংরক্ষিত লিংক ভবিষ্যতের index.html / splash-এ ব্যবহার করা যাবে।</p>
+          <div class="field"><label>অ্যাপ ডাউনলোড লিংক</label><input type="text" id="appDownloadLink" placeholder="https://drive.google.com/..."></div>
+          <button class="btn btn-primary" onclick="saveAppDownloadLink()">💾 লিংক সংরক্ষণ করুন</button>
+        </div>
+        <div class="card">
+          <div class="card-header">🎨 স্প্ল্যাশ স্ক্রিন কাস্টমাইজেশন</div>
+          <p style="font-size:.83em;color:var(--gray-mid);margin-bottom:10px">
+            অ্যাপ ডাউনলোড লিংক থাকলে স্প্ল্যাশ দেখাবে। নিচের লেখাগুলো স্প্ল্যাশে দেখাবে।
+          </p>
+          <div class="field">
+            <label>স্প্ল্যাশ টাইটেল</label>
+            <input type="text" id="splashTitle" placeholder="জ্ঞানাঙ্গন">
+          </div>
+          <div class="field">
+            <label>স্প্ল্যাশ সাবটাইটেল</label>
+            <input type="text" id="splashSubtitle" placeholder="Learn smartly, be smarter.">
+          </div>
+          <div class="field">
+            <label>স্প্ল্যাশ বার্তা (ঐচ্ছিক)</label>
+            <textarea id="splashMessage" rows="3" placeholder="যেমন: ভালো অভিজ্ঞতার জন্য আমাদের অ্যাপটি ডাউনলোড করুন"></textarea>
+          </div>
+          <button class="btn btn-primary" onclick="saveSplashSettings()">💾 স্প্ল্যাশ সংরক্ষণ করুন</button>
+        </div>
+        <div class="card">
+          <div class="card-header">🔴 লাইভ পরীক্ষার নোটিফিকেশন</div>
+          <p style="font-size:.83em;color:var(--gray-mid);margin-bottom:12px">
+            চালু থাকলে — প্রতিদিন অ্যাপে প্রবেশের সময় সব চলমান লাইভ পরীক্ষার তালিকা একটি পপআপে দেখাবে।
+          </p>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.95em">
+              <input type="checkbox" id="liveNoticeToggle" style="width:18px;height:18px;cursor:pointer" onchange="saveLiveNoticeToggle()">
+              <span>লাইভ পরীক্ষার নোটিফিকেশন দেখানো চালু রাখুন</span>
+            </label>
+          </div>
+          <p style="font-size:.8em;color:var(--gray-mid)">💡 বন্ধ করলে — ইউজার নিজে ব্যাচে ঢুকে দেখবে কোন পরীক্ষা চলছে।</p>
+        </div>
+        <div class="card">
+          <div class="card-header">📢 ঘোষণা পপআপ (সব ইউজারের জন্য)</div>
+          <p style="font-size:.83em;color:var(--gray-mid);margin-bottom:10px">
+            এই বার্তা সব লগইন ইউজারের কাছে পপআপ হিসেবে দেখাবে। ইউজার "পড়েছি" ক্লিক করলে ২৪ ঘণ্টার জন্য বন্ধ হবে — পরদিন আবার দেখাবে। নতুন ঘোষণা দিলে সাথে সাথে সবার কাছে দেখাবে।
+          </p>
+          <div class="field">
+            <label>ঘোষণার শিরোনাম</label>
+            <input type="text" id="announcementTitle" placeholder="যেমন: গুরুত্বপূর্ণ ঘোষণা, নোটিশ, সতর্কতা...">
+          </div>
+          <div class="field">
+            <label>ঘোষণার বার্তা</label>
+            <textarea id="announcementText" rows="5" placeholder="এখানে ঘোষণা লিখুন..."></textarea>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="saveAnnouncement()">💾 ঘোষণা সংরক্ষণ ও সবাইকে দেখান</button>
+            <button class="btn btn-danger" onclick="clearAnnouncement()">🗑️ ঘোষণা মুছুন</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">📊 সিস্টেম তথ্য</div>
+          <div id="sysInfo"><div class="empty-msg">লোড হচ্ছে...</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="duplicateTestModal" onclick="closeDuplicateModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title">📋 পরীক্ষা কপি করুন</div>
+    <p style="font-size:.85em;color:var(--gray-mid);margin-bottom:14px" id="duplicateTestName"></p>
+    <div class="field">
+      <label>কোন ব্যাচে পাঠাবেন?</label>
+      <select id="duplicateTargetBatch">
+        <option value="">-- ব্যাচ নির্বাচন করুন --</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>নতুন পরীক্ষার নাম (ঐচ্ছিক — খালি রাখলে আগেরটাই থাকবে)</label>
+      <input type="text" id="duplicateNewName" placeholder="যেমন: সাপ্তাহিক মডেল টেস্ট — ব্যাচ ২">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeDuplicateModal()">বাতিল</button>
+      <button class="btn btn-primary" onclick="confirmDuplicateTest()">📋 কপি করুন</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="studentEditModal" onclick="closeStudentEditModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title">✏️ স্টুডেন্ট এডিট</div>
+    <input type="hidden" id="studentEditId">
+    <div class="field">
+      <label>নাম</label>
+      <input type="text" id="studentEditName" placeholder="নাম">
+    </div>
+    <div class="field">
+      <label>মোবাইল</label>
+      <input type="text" id="studentEditPhone" placeholder="মোবাইল">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeStudentEditModal()">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveStudentEdit()">সেভ</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="questionEditModal" onclick="closeQuestionEditModal()">
+  <div class="modal-box" style="max-width:640px" onclick="event.stopPropagation()">
+    <div class="modal-title">✏️ প্রশ্ন এডিট</div>
+    <input type="hidden" id="questionEditId">
+    <div class="field"><label>প্রশ্ন</label><textarea id="questionEditAr" rows="4"></textarea></div>
+    <div class="form-row">
+      <div class="field"><label>অপশন A</label><input type="text" id="questionEditA"></div>
+      <div class="field"><label>অপশন B</label><input type="text" id="questionEditB"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>অপশন C</label><input type="text" id="questionEditC"></div>
+      <div class="field"><label>অপশন D</label><input type="text" id="questionEditD"></div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>সঠিক উত্তর</label>
+        <select id="questionEditCorrect">
+          <option value="a">A</option>
+          <option value="b">B</option>
+          <option value="c">C</option>
+          <option value="d">D</option>
+        </select>
+      </div>
+      <div class="field"><label>ব্যাখ্যা (বাংলা)</label><textarea id="questionEditExplanation" rows="3"></textarea></div>
+    </div>
+    <div class="field">
+      <label>বিষয় <span style="color:var(--red)">*</span></label>
+      <select id="questionEditSubject"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeQuestionEditModal()">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveQuestionEdit()">সেভ</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="testEditModal" onclick="closeTestEditModal()">
+  <div class="modal-box" style="max-width:520px" onclick="event.stopPropagation()">
+    <div class="modal-title">✏️ পরীক্ষা এডিট</div>
+    <input type="hidden" id="testEditId">
+    <div class="field"><label>পরীক্ষার নাম</label><input type="text" id="testEditName" placeholder="পরীক্ষার নাম"></div>
+    <div class="form-row">
+      <div class="field"><label>সময় (মিনিট)</label><input type="number" id="testEditDuration" min="5"></div>
+      <div class="field"><label>পূর্ণমান</label><input type="number" id="testEditTotalMarks" min="1"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>পাশ নম্বর (%)</label><input type="number" id="testEditPassPercent" min="1" max="100"></div>
+      <div class="field"><label>নেগেটিভ মার্ক</label><input type="number" id="testEditNegMark" step="0.25" min="0"></div>
+    </div>
+    <div class="field">
+      <label>অপশন লেবেল ভাষা</label>
+      <select id="testEditOptLang">
+        <option value="ar">আরবি — أ ب ج د</option>
+        <option value="bn">বাংলা — ক খ গ ঘ</option>
+        <option value="en">ইংরেজি — A B C D</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>📂 পরীক্ষার ধরন (Category)</label>
+      <select id="testEditCategory">
+        <option value="regular">📝 নিয়মিত পরীক্ষা</option>
+        <option value="revision">🔄 রিভিশন পরীক্ষা</option>
+        <option value="mega_revision">🔁 মেগা রিভিশন</option>
+        <option value="full_model">📋 ফুল মডেল টেস্ট</option>
+        <option value="extra">➕ অতিরিক্ত পরীক্ষা</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>🕐 শিডিউল — নির্দিষ্ট সময়ে স্বয়ংক্রিয়ভাবে চালু হবে</label>
+      <input type="datetime-local" id="testEditScheduledAt">
+      <p class="help-text">ফাঁকা রাখলে শিডিউল থাকবে না।</p>
+    </div>
+    <p class="help-text" style="margin-top:6px">ℹ️ প্রশ্ন এডিট করতে চাইলে "প্রশ্ন ব্যাংক" ট্যাবে যান।</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeTestEditModal()">বাতিল</button>
+      <button class="btn btn-primary" onclick="saveTestEdit()">💾 সেভ</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DB_URL = 'https://vzctytzhcjlcrtpljpxo.supabase.co/rest/v1/';
+const DB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6Y3R5dHpoY2psY3J0cGxqcHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1Nzc4NzksImV4cCI6MjA5MzE1Mzg3OX0.B8jKTJDXwEpyST9-J5ct_-GIp27Z2-yLjMENdAysdXQ';
+const ST_URL = 'https://vzctytzhcjlcrtpljpxo.supabase.co/storage/v1/';
+const _k = atob('Z3lhbmFuZ29uMjAyNQ==');
+
+let globalBatches = [];
+let allStudents = [];
+let currentEditBatchId = null;
+let builderQuestionPool = [];
+let builderPickedQuestions = [];
+let builderTestId = null;
+let builderQuestionCount = 0;
+let builderUploadedQuestions = []; // CSV থেকে আপলোড হওয়া প্রশ্নের তালিকা
+let currentQuestionRows = [];
+let selectedQuestionIds = new Set();
+let allTestsCache = [];
+let lastResultData = { title:'', subtitle:'', rows:[] };
+
+// ══ বিষয় তালিকা (Subjects) ══
+const SUBJECTS = [
+  // আরবি অংশ
+  { code:'quran',          label:'কুরআন',            group:'arabic'  },
+  { code:'usul_quran',     label:'উসুলুল কুরআন',      group:'arabic'  },
+  { code:'hadith',         label:'হাদিস',            group:'arabic'  },
+  { code:'usul_hadith',    label:'উসুলুল হাদিস',      group:'arabic'  },
+  { code:'fiqh',           label:'ফিকহ',             group:'arabic'  },
+  { code:'usul_fiqh',      label:'উসুলুল ফিকহ',       group:'arabic'  },
+  { code:'balagat_mantiq', label:'বালাগাত-মানতিক',   group:'arabic'  },
+  { code:'arabic_lit',     label:'আরবি সাহিত্য',      group:'arabic'  },
+  { code:'qawaid',         label:'কাওয়ায়েদ',          group:'arabic'  },
+  { code:'aqaid',          label:'আকাইদ',            group:'arabic'  },
+  // জেনারেল অংশ
+  { code:'bangla',         label:'বাংলা',            group:'general' },
+  { code:'english',        label:'ইংরেজি',           group:'general' },
+  { code:'math',           label:'গণিত',             group:'general' },
+  { code:'gk',             label:'সাধারণ জ্ঞান',      group:'general' },
+  // Safety placeholder
+  { code:'general_other',  label:'শ্রেণিবিহীন',       group:'other'   },
+];
+const SUBJECT_BY_CODE = Object.fromEntries(SUBJECTS.map(s => [s.code, s]));
+const VALID_SUBJECT_CODES = new Set(SUBJECTS.map(s => s.code));
+
+function subjectLabel(code){
+  return SUBJECT_BY_CODE[code]?.label || 'শ্রেণিবিহীন';
+}
+
+function subjectOptionsHtml(selected = '', includeAll = false, allLabel = 'সব বিষয়'){
+  let html = '';
+  if(includeAll) html += `<option value=""${selected === '' ? ' selected' : ''}>${escHtml(allLabel)}</option>`;
+  html += '<optgroup label="📘 আরবি অংশ">';
+  SUBJECTS.filter(s => s.group === 'arabic').forEach(s => {
+    html += `<option value="${s.code}"${s.code === selected ? ' selected' : ''}>${escHtml(s.label)}</option>`;
+  });
+  html += '</optgroup>';
+  html += '<optgroup label="📗 জেনারেল অংশ">';
+  SUBJECTS.filter(s => s.group === 'general').forEach(s => {
+    html += `<option value="${s.code}"${s.code === selected ? ' selected' : ''}>${escHtml(s.label)}</option>`;
+  });
+  html += '</optgroup>';
+  html += `<option value="general_other"${selected === 'general_other' ? ' selected' : ''}>শ্রেণিবিহীন</option>`;
+  return html;
+}
+
+async function api(endpoint, method='GET', body=null, extraHeaders={}){
+  const opts = { method, headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY, 'Content-Type': 'application/json' } };
+  if(method === 'POST' || method === 'PATCH') opts.headers['Prefer'] = 'return=representation';
+  Object.assign(opts.headers, extraHeaders);
+  if(body !== null && body !== undefined) opts.body = JSON.stringify(body);
+  const res = await fetch(DB_URL + endpoint, opts);
+  const txt = await res.text();
+  if(!res.ok) throw new Error(`API ${res.status}: ${txt}`);
+  return txt ? JSON.parse(txt) : [];
+}
+
+async function uploadFile(file, folder='uploads'){
+  const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+  const fname = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2,7)}.${ext}`;
+  const res = await fetch(`${ST_URL}object/materials/${fname}`, {
+    method: 'POST',
+    headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY, 'Content-Type': file.type || 'application/octet-stream' },
+    body: file
+  });
+  if(!res.ok){
+    throw new Error(`ফাইল আপলোড ব্যর্থ। Supabase Storage "materials" বাকেট চেক করুন। (${res.status})`);
+  }
+  return `${ST_URL}object/public/materials/${fname}`;
+}
+
+async function deleteStorageFile(url){
+  const marker = 'object/public/materials/';
+  const idx = (url || '').indexOf(marker);
+  if(idx < 0) return;
+  const path = url.substring(idx + marker.length);
+  await fetch(`${ST_URL}object/materials/${path}`, {
+    method: 'DELETE',
+    headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY }
+  });
+}
+
+function ensureUrl(url){
+  if(!url || !url.trim()) return '';
+  url = url.trim();
+  return /^https?:\/\//i.test(url) ? url : 'https://' + url;
+}
+
+function maskPhone(p){
+  if(!p || p.length < 6) return p || '';
+  return p.substring(0, 4) + '*****' + p.substring(p.length - 2);
+}
+
+function pwToggle(inputId, btn){
+  const inp = document.getElementById(inputId);
+  if(!inp) return;
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.textContent = show ? '🙈' : '👁';
+}
+
+function showToast(msg, type='success'){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  clearTimeout(showToast._tm);
+  showToast._tm = setTimeout(() => t.className = 'toast', 3200);
+}
+
+function optionLetters(lang='ar'){
+  if(lang === 'bn') return ['ক','খ','গ','ঘ'];
+  if(lang === 'en') return ['A','B','C','D'];
+  return ['أ','ب','ج','د'];
+}
+
+function csvEscape(v){
+  const s = String(v ?? '');
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+}
+
+function downloadCSV(filename, rows, headers){
+  const csv = [headers.join(',')].concat(rows.map(r => headers.map(h => csvEscape(r[h])).join(','))).join('\n');
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function normalizePhone(v){
+  return String(v ?? '').replace(/\D/g, '');
+}
+
+function dedupeStudents(rows){
+  const seen = new Set();
+  return (rows || []).filter(s => {
+    const phone = normalizePhone(s.phone);
+    const name = String(s.name || '').trim().toLowerCase();
+    const key = phone ? `${s.batch_id || ''}|phone:${phone}` : `${s.batch_id || ''}|name:${name}`;
+    if(seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function openModal(id){
+  const el = document.getElementById(id);
+  if(el) el.classList.add('show');
+}
+
+function closeModal(id){
+  const el = document.getElementById(id);
+  if(el) el.classList.remove('show');
+}
+
+function parseCSV(text){
+  const rows = text.replace(/\r/g,'').split('\n').filter(l => l.trim());
+  if(rows.length < 2) return [];
+  function splitLine(line){
+    const r=[]; let cur='', inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c === '"') inQ = !inQ;
+      else if(c === ',' && !inQ){ r.push(cur.trim().replace(/^"|"$/g,'')); cur=''; }
+      else cur += c;
+    }
+    r.push(cur.trim().replace(/^"|"$/g,''));
+    return r;
+  }
+  const headers = splitLine(rows[0]).map(h => h.toLowerCase());
+  const idx = n => headers.indexOf(n);
+  const [qI,aI,bI,cI,dI,corI,expI,subI] = ['question_ar','opt_a','opt_b','opt_c','opt_d','correct','explanation_bn','subject'].map(idx);
+  return rows.slice(1).map(r => {
+    const c = splitLine(r);
+    if(!c[qI] || !c[qI].trim()) return null;
+    const obj = {
+      question_ar: c[qI] || '',
+      opt_a: c[aI] || '',
+      opt_b: c[bI] || '',
+      opt_c: c[cI] || '',
+      opt_d: c[dI] || '',
+      correct: (c[corI] || 'a').trim().toLowerCase(),
+      explanation_bn: expI >= 0 ? (c[expI] || '') : ''
+    };
+    // CSV-তে subject কলাম থাকলে নিয়ে নাও (যদি valid হয়)
+    if(subI >= 0 && c[subI]){
+      const s = c[subI].trim().toLowerCase();
+      if(VALID_SUBJECT_CODES.has(s)) obj.subject = s;
+    }
+    return obj;
+  }).filter(Boolean);
+}
+
+function printInPopup(htmlContent, title='জ্ঞানাঙ্গন'){
+  const popup = window.open('', '_blank', 'width=900,height=700,scrollbars=yes');
+  if(!popup){
+    showToast('পপআপ ব্লক হয়েছে। ব্রাউজার পপআপ অনুমতি দিন।', 'error');
+    return;
+  }
+  popup.document.write(`<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<title>${escHtml(title)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;600;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Noto Serif Bengali','Amiri',serif; background:#fff; color:#111; padding:20px 30px; direction:ltr; }
+  .print-header { text-align:center; border-bottom:2px solid #1a6b3c; padding-bottom:14px; margin-bottom:20px; direction:ltr; }
+  .print-header h1 { font-size:20px; color:#1a6b3c; }
+  .print-header h2 { font-size:16px; margin:6px 0; color:#333; }
+  .print-header .meta { display:flex; justify-content:space-between; padding:0 10px; font-size:12px; color:#555; margin-top:6px; direction:ltr; }
+  .pq-card { border:1px solid #ddd; border-radius:10px; padding:14px 16px; margin-bottom:14px; }
+  .pq-card > b { font-size:16px; line-height:1.7; }
+  .pq-opts { margin-top:10px; display:grid; grid-template-columns:1fr 1fr; gap:8px 18px; font-size:15px; }
+  .pq-opts > div { line-height:1.6; padding:2px 0; }
+  .pq-opts > div[dir="rtl"], .pq-card > b[dir="rtl"], .pq-answer[dir="rtl"], .pq-explanation[dir="rtl"] { text-align:right; }
+  .pq-opts > div[dir="ltr"], .pq-card > b[dir="ltr"], .pq-answer[dir="ltr"], .pq-explanation[dir="ltr"] { text-align:left; }
+  .pq-correct { color:#1a6b3c; font-weight:bold; }
+  .pq-answer { margin-top:10px; font-size:14px; color:#1a6b3c; font-weight:bold; border-top:1px dashed #ccc; padding-top:7px; }
+  .pq-explanation { margin-top:5px; font-size:13px; color:#555; font-style:italic; line-height:1.6; }
+  table { width:100%; border-collapse:collapse; margin-top:16px; }
+  th,td { border:1px solid #ccc; padding:8px 10px; text-align:left; }
+  th { background:#f6f6f6; }
+  .footer-note { margin-top:16px; font-size:11px; color:#666; text-align:center; }
+  .watermark-wrap { position:relative; min-height:100vh; }
+  .watermark-wrap::before,
+  .watermark-wrap::after {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(-35deg);
+    font-size: 52px;
+    font-weight: 700;
+    color: rgba(26, 107, 60, 0.10);
+    pointer-events: none;
+    z-index: 9999;
+    text-align: center;
+    font-family: 'Noto Serif Bengali', serif;
+  }
+  .watermark-wrap::before { content: 'জ্ঞানাঙ্গন'; margin-top:-40px; }
+  .watermark-wrap::after  { content: '01746839635'; margin-top:40px; font-size:36px; }
+  @media print { .watermark-wrap::before, .watermark-wrap::after { position:fixed; } }
+</style>
+</head>
+<body>
+<div class="watermark-wrap">
+${htmlContent}
+</div>
+<script>window.onload=()=>setTimeout(()=>window.print(),200);<\/script>
+</body>
+</html>`);
+  popup.document.close();
+}
+
+async function generateQuestionPDF(id){
+  try{
+    showToast('📄 প্রশ্নপত্র তৈরি হচ্ছে...', 'info');
+    const tData = await api(`tests?id=eq.${id}`);
+    const test = tData[0];
+    if(!test) return showToast('টেস্ট পাওয়া যায়নি', 'error');
+    const links = await api(`test_questions?test_id=eq.${id}`);
+    if(!links.length) return showToast('প্রশ্ন নেই', 'error');
+    const qIds = links.map(l => l.question_id).join(',');
+    const questions = await api(`questions?id=in.(${qIds})`);
+    const labels = optionLetters(test.option_lang || 'ar');
+    let questionsHtml = '';
+    questions.forEach((q, i) => {
+      const optMap = {a: labels[0], b: labels[1], c: labels[2], d: labels[3]};
+      const correctLabel = optMap[q.correct] || q.correct || '';
+      const correctText = escHtml(q[`opt_${q.correct}`] || '');
+      const explanation = q.explanation_bn ? `<div class="pq-explanation" dir="auto"><b>ব্যাখ্যা:</b> ${escHtml(q.explanation_bn)}</div>` : '';
+      questionsHtml += `<div class="pq-card">
+        <b dir="auto" style="display:block">${i+1}. ${escHtml(q.question_ar || '')}</b>
+        <div class="pq-opts">
+          <div dir="auto" class="${q.correct==='a'?'pq-correct':''}">${labels[0]}) ${escHtml(q.opt_a || '')}</div>
+          <div dir="auto" class="${q.correct==='b'?'pq-correct':''}">${labels[1]}) ${escHtml(q.opt_b || '')}</div>
+          <div dir="auto" class="${q.correct==='c'?'pq-correct':''}">${labels[2]}) ${escHtml(q.opt_c || '')}</div>
+          <div dir="auto" class="${q.correct==='d'?'pq-correct':''}">${labels[3]}) ${escHtml(q.opt_d || '')}</div>
+        </div>
+        <div class="pq-answer" dir="auto">✅ সঠিক উত্তর: ${correctLabel}) ${correctText}</div>
+        ${explanation}
+      </div>`;
+    });
+    const html = `
+      <div class="print-header" style="direction:ltr">
+        <h1>জ্ঞানাঙ্গন (Gyanangon)</h1>
+        <p style="font-size:12px;color:#555">শিক্ষক নিবন্ধন প্রস্তুতি</p>
+        <h2>বিষয়: ${escHtml(test.name || '')}</h2>
+        <div class="meta">
+          <span>সময়: ${test.duration_minutes || ''} মিনিট</span>
+          <span>পূর্ণমান: ${test.total_marks || ''}</span>
+          <span>নেগেটিভ: ${test.negative_mark || ''}</span>
+        </div>
+      </div>
+      <div>${questionsHtml}</div>
+      <p class="footer-note">* জ্ঞানাঙ্গন — শিক্ষক নিবন্ধন প্রস্তুতি</p>`;
+    printInPopup(html, `প্রশ্নপত্র — ${test.name || ''}`);
+  }catch(e){
+    showToast('❌ ব্যর্থ: ' + e.message, 'error');
+  }
+}
+
+function printResultPDF(){
+  if(!lastResultData.rows.length) return showToast('আগে রেজাল্ট লোড করুন', 'error');
+  const {title, subtitle, rows} = lastResultData;
+  const tableRows = rows.map((a, i) => `<tr>
+    <td>${i < 3 ? ['🥇','🥈','🥉'][i] : i + 1}</td>
+    <td>${escHtml(a.students?.name || '—')}</td>
+    <td style="font-family:monospace">${escHtml(maskPhone(a.students?.phone || ''))}</td>
+    <td><b>${a.score}</b></td>
+  </tr>`).join('');
+  const html = `
+    <div class="print-header" style="direction:ltr">
+      <h1>জ্ঞানাঙ্গন (Gyanangon)</h1>
+      <p style="font-size:12px;color:#555">শিক্ষক নিবন্ধন প্রস্তুতি</p>
+      <h2>${escHtml(title)}</h2>
+      <p class="res-sub">${escHtml(subtitle)}</p>
+    </div>
+    <table>
+      <thead><tr><th>র‍্যাঙ্ক</th><th>নাম</th><th>মোবাইল</th><th>স্কোর</th></tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table>
+    <p class="footer-note">* মোবাইল নম্বর আংশিকভাবে গোপন করা হয়েছে | জ্ঞানাঙ্গন — শিক্ষক নিবন্ধন প্রস্তুতি</p>`;
+  printInPopup(html, `ফলাফল — ${title}`);
+}
+
+function saveAdmin(){ sessionStorage.setItem('gya_adm', '1'); syncHeader(); }
+function clearAdmin(){ sessionStorage.removeItem('gya_adm'); syncHeader(); }
+function isAdmin(){ return sessionStorage.getItem('gya_adm') === '1'; }
+
+function syncHeader(){
+  const btn = document.getElementById('adminLogoutBtn');
+  if(btn) btn.style.display = isAdmin() ? 'inline-block' : 'none';
+}
+
+function goTo(sid){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(sid);
+  if(el) el.classList.add('active');
+  syncHeader();
+}
+
+function switchAdminTab(t, el){
+  document.querySelectorAll('.admin-page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar .nav-item').forEach(n => n.classList.remove('active'));
+  const pg = document.getElementById('admin-' + t);
+  if(pg) pg.classList.add('active');
+  if(el) el.classList.add('active');
+  if(t === 'dash') loadAdminDashboard();
+  if(t === 'batches') loadAdminBatches();
+  if(t === 'builder') loadBuilder();
+  if(t === 'questions') loadQuestions();
+  if(t === 'students') loadAdminStudents();
+  if(t === 'settings') loadAdminSettings();
+  if(t === 'results') refreshGlobalBatches();
+}
+
+async function adminLogin(){
+  const pass = document.getElementById('adminPass').value.trim();
+  if(!pass) return showToast('পাসওয়ার্ড দিন', 'error');
+  try{
+    const s = await api('settings?id=eq.1');
+    const stored = (s && s.length) ? (s[0].admin_pass || '') : '';
+    if((stored && pass === stored) || (!stored && pass === _k)) doAdminEntry();
+    else showToast('❌ ভুল পাসওয়ার্ড', 'error');
+  }catch(_){
+    if(pass === _k) doAdminEntry();
+    else showToast('❌ ভুল পাসওয়ার্ড', 'error');
+  }
+}
+
+function doAdminEntry(){
+  saveAdmin();
+  document.getElementById('adminPass').value = '';
+  goTo('screenAdminPanel');
+  switchAdminTab('dash', document.querySelector('.sidebar .nav-item'));
+}
+
+function adminLogout(){
+  clearAdmin();
+  goTo('screenAdminLogin');
+  showToast('লগআউট হয়েছে', 'info');
+}
+
+async function seedDefaultBatches(){
+  try{
+    let ex = await api('batches?order=id.desc');
+    const rMap = {
+      'সহকারী মৌলবি সাবজেক্টিভ':'সহকারী মৌলবি subjective',
+      'আরবি প্রভাষক সাবজেক্টিভ':'আরবি প্রভাষক subjective',
+      'ইবতেদায়ী মৌলবি Exam Batch':'ইবতেদায়ী মৌলবি Exam',
+      'সহকারী মৌলবি Exam Batch':'সহকারী মৌলবি exam',
+      'আরবি প্রভাষক Exam Batch':'আরবি প্রভাষক exam',
+      'ফ্রি - ডেমো':'ফ্রি'
+    };
+    for(const b of ex) if(rMap[b.name]) await api(`batches?id=eq.${b.id}`, 'PATCH', { name: rMap[b.name] });
+    const desired = ['ফ্রি','আরবি প্রভাষক exam','আরবি প্রভাষক subjective','সহকারী মৌলবি exam','সহকারী মৌলবি subjective','ইবতেদায়ী মৌলবি Exam','ইবতেদায়ী মৌলবি Subjective'];
+    ex = await api('batches?order=id.desc');
+    const names = ex.map(b => b.name);
+    for(const n of desired) if(!names.includes(n)) await api('batches', 'POST', { name:n, password:'1234' });
+  }catch(_){ }
+}
+
+async function seedSettings(){
+  try{
+    const s = await api('settings?id=eq.1');
+    if(!s || !s.length) await api('settings', 'POST', { id:1, admin_pass:_k });
+  }catch(_){ }
+}
+
+async function refreshGlobalBatches(){
+  globalBatches = await api('batches?order=id.desc');
+  ['dashAdminBatch','bBatchSelect','resAdminBatch','stuFilterBatch'].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    const val = el.value;
+    const pfx = id === 'dashAdminBatch' || id === 'stuFilterBatch' ? '<option value="">সব ব্যাচ</option>' : '<option value="">নির্বাচন করুন</option>';
+    el.innerHTML = pfx + globalBatches.map(b => `<option value="${b.id}">${escHtml(b.name)}</option>`).join('');
+    if(val) el.value = val;
+  });
+}
+
+async function loadAdminDashboard(){
+  await refreshGlobalBatches();
+  const bId = document.getElementById('dashAdminBatch').value;
+  const f = bId ? `batch_id=eq.${bId}&` : '';
+  const tests = await api(`tests?${f}order=id.desc&select=*,batches(name)`);
+  let aH = '', iH = '', arcH = '';
+  const CAT_LABEL = {regular:'📝 নিয়মিত',revision:'🔄 রিভিশন',mega_revision:'🔁 মেগা রিভিশন',full_model:'📋 ফুল মডেল',extra:'➕ অতিরিক্ত'};
+  // Admin-এও scheduled auto-activate
+  const now = Date.now();
+  const toActivate = tests.filter(t=>!t.is_active&&!t.is_archived&&t.scheduled_at&&new Date(t.scheduled_at).getTime()<=now);
+  if(toActivate.length){
+    await Promise.all(toActivate.map(t=>api(`tests?id=eq.${t.id}`,'PATCH',{is_active:true,scheduled_at:null}).catch(()=>{})));
+    toActivate.forEach(t=>{t.is_active=true;t.scheduled_at=null;});
+  }
+  tests.forEach(t => {
+    const catBadge = `<span style="font-size:.75em;background:#e8f4fd;color:var(--blue);padding:2px 7px;border-radius:10px;margin-left:5px">${CAT_LABEL[t.category]||'📝 নিয়মিত'}</span>`;
+    const schedBadge = (t.scheduled_at && !t.is_active) ? `<span style="font-size:.72em;background:#fff8e1;color:var(--gold);padding:2px 7px;border-radius:10px;margin-left:4px">🕐 ${new Date(t.scheduled_at).toLocaleString('bn-BD',{timeZone:'Asia/Dhaka',dateStyle:'short',timeStyle:'short'})}</span>` : '';
+    const row = `<tr>
+      <td><b>${escHtml(t.name)}</b>${catBadge}${schedBadge}</td><td>${escHtml(t.batches?.name || '—')}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-small btn-primary" onclick="generateQuestionPDF(${t.id})">📄 প্রশ্ন</button>
+        <button class="btn btn-small btn-gold" onclick="openTestEdit(${t.id})">✏️ এডিট</button>
+        <button class="btn btn-small" style="background:#6a5acd;color:#fff" data-dupid="${t.id}" data-dupname="${escHtml(t.name)}" onclick="openDuplicateModal(+this.dataset.dupid, this.dataset.dupname)">📋 কপি</button>
+        <button class="btn btn-small btn-gold" onclick="toggleField(${t.id},'is_archived',${!t.is_archived})">${t.is_archived ? '↩ আন-আর্কাইভ' : '📦 আর্কাইভ'}</button>
+        <button class="btn btn-small btn-outline" onclick="toggleField(${t.id},'is_active',${!t.is_active})">${t.is_active ? '⏸ বন্ধ' : '▶ চালু'}</button>
+        <button class="btn btn-small" style="background:var(--blue);color:#fff" onclick="toggleField(${t.id},'result_published',${!t.result_published})">${t.result_published ? '🙈 গোপন' : '📢 প্রকাশ'}</button>
+        <button class="btn btn-small btn-danger" onclick="deleteTest(${t.id})">🗑</button>
+      </td>
+    </tr>`;
+    if(t.is_archived) arcH += row; else if(t.is_active) aH += row; else iH += row;
+  });
+  const e = m => `<tr><td colspan="3" class="empty-msg">${m}</td></tr>`;
+  document.getElementById('adminActiveTestsBody').innerHTML = aH || e('কোনো চলমান পরীক্ষা নেই');
+  document.getElementById('adminInactiveTestsBody').innerHTML = iH || e('কোনো নিষ্ক্রিয় পরীক্ষা নেই');
+  document.getElementById('adminArchivedTestsBody').innerHTML = arcH || e('কোনো আর্কাইভ নেই');
+}
+
+async function toggleField(id, f, v){
+  // আর্কাইভ করলে is_active=false একসাথে করো
+  const patch = { [f]:v };
+  if(f === 'is_archived' && v === true) patch.is_active = false;
+  await api(`tests?id=eq.${id}`, 'PATCH', patch);
+  showToast('✅ আপডেট হয়েছে');
+  loadAdminDashboard();
+}
+
+// ══════════════════════════════════════════════════
+// DUPLICATE / COPY TEST
+// ══════════════════════════════════════════════════
+let _dupTestId = null;
+let _dupTestOrigName = '';
+
+function openDuplicateModal(testId, testName){
+  _dupTestId = testId;
+  _dupTestOrigName = testName;
+  document.getElementById('duplicateTestName').textContent = '📋 পরীক্ষা: ' + testName;
+  document.getElementById('duplicateNewName').value = '';
+  // batch dropdown populate
+  const sel = document.getElementById('duplicateTargetBatch');
+  sel.innerHTML = '<option value="">-- ব্যাচ নির্বাচন করুন --</option>' +
+    globalBatches.map(b=>`<option value="${b.id}">${escHtml(b.name)}</option>`).join('');
+  openModal('duplicateTestModal');
+}
+
+function closeDuplicateModal(){
+  closeModal('duplicateTestModal');
+  _dupTestId = null;
+  _dupTestOrigName = '';
+}
+
+async function confirmDuplicateTest(){
+  const targetBatch = document.getElementById('duplicateTargetBatch').value;
+  if(!targetBatch) return showToast('ব্যাচ নির্বাচন করুন','error');
+  const newName = document.getElementById('duplicateNewName').value.trim() || _dupTestOrigName;
+  try{
+    showToast('⏳ কপি হচ্ছে...');
+    // ১. মূল test এর তথ্য আনো
+    const tests = await api(`tests?id=eq.${_dupTestId}`);
+    if(!tests || !tests.length) return showToast('পরীক্ষা খুঁজে পাওয়া যায়নি','error');
+    const orig = tests[0];
+    // ২. নতুন test তৈরি করো (is_active=false, is_archived=false, scheduled_at=null)
+    const newTest = await api('tests','POST',{
+      name: newName,
+      batch_id: parseInt(targetBatch),
+      duration_minutes: orig.duration_minutes,
+      total_marks: orig.total_marks,
+      negative_mark: orig.negative_mark,
+      pass_percent: orig.pass_percent,
+      option_lang: orig.option_lang,
+      category: orig.category || 'regular',
+      is_active: false,
+      is_archived: false,
+      result_published: false,
+      scheduled_at: null
+    });
+    if(!newTest || !newTest[0]) return showToast('নতুন পরীক্ষা তৈরি ব্যর্থ','error');
+    const newTestId = newTest[0].id;
+    // ৩. প্রশ্নের লিস্ট আনো
+    const links = await api(`test_questions?test_id=eq.${_dupTestId}&select=question_id`);
+    if(links && links.length){
+      // ব্যাচে insert করো
+      const insertRows = links.map(l=>({test_id:newTestId, question_id:l.question_id}));
+      // ১০টা করে batch insert
+      for(let i=0;i<insertRows.length;i+=50){
+        await api('test_questions','POST',insertRows.slice(i,i+50));
+      }
+    }
+    closeDuplicateModal();
+    const bName = globalBatches.find(b=>b.id==targetBatch)?.name || '';
+    showToast(`✅ "${newName}" — ${bName} ব্যাচে কপি সম্পন্ন! (${links?.length||0}টি প্রশ্ন)`);
+    loadAdminDashboard();
+  }catch(e){
+    console.error(e);
+    showToast('❌ কপি ব্যর্থ: '+e.message,'error');
+  }
+}
+
+async function deleteTest(id){
+  if(!confirm('নিশ্চিতভাবে মুছবেন?')) return;
+  await api(`test_questions?test_id=eq.${id}`, 'DELETE');
+  await api(`attempts?test_id=eq.${id}`, 'DELETE');
+  await api(`tests?id=eq.${id}`, 'DELETE');
+  allTestsCache = [];
+  showToast('✅ পরীক্ষা মুছে ফেলা হয়েছে');
+  loadAdminDashboard();
+}
+
+async function createBatch(){
+  const n = document.getElementById('newBatchName').value.trim();
+  const p = document.getElementById('newBatchPass').value.trim();
+  if(!n || !p) return showToast('নাম ও পাসওয়ার্ড দিন', 'error');
+  await api('batches', 'POST', { name:n, password:p });
+  document.getElementById('newBatchName').value = '';
+  document.getElementById('newBatchPass').value = '';
+  showToast('✅ নতুন ব্যাচ তৈরি হয়েছে');
+  await refreshGlobalBatches();
+  loadAdminBatches();
+}
+
+async function loadAdminBatches(){
+  await refreshGlobalBatches();
+  document.getElementById('adminBatchList').innerHTML = globalBatches.map(b =>
+    `<div class="list-item">
+      <div style="flex:1" onclick="openBatchEditor(${b.id})">
+        <strong>${escHtml(b.name)}</strong>
+        <br><small style="color:var(--gray-mid)">পাস: ${escHtml(b.password)} | শিট পাস: ${escHtml(b.sheet_password || 'নেই')} | রুটিন:${b.routine_link ? '✅' : '❌'} শিট:${b.sheet_link ? '✅' : '❌'} ভিডিও:${b.video_link ? '✅' : '❌'}</small>
+      </div>
+      <button class="btn btn-small btn-danger" onclick="event.stopPropagation();deleteBatch(${b.id})">🗑</button>
+    </div>`).join('') || '<div class="empty-msg">কোনো ব্যাচ নেই</div>';
+}
+
+async function openBatchEditor(batchId){
+  await refreshGlobalBatches();
+  const b = globalBatches.find(x => x.id == batchId);
+  if(!b) return showToast('ব্যাচ পাওয়া যায়নি', 'error');
+  currentEditBatchId = batchId;
+  document.getElementById('editBatchTitle').textContent = '✏️ ' + b.name;
+  document.getElementById('editBatchName').value = b.name || '';
+  document.getElementById('editBatchPassword').value = b.password || '';
+  document.getElementById('editSheetPassword').value = b.sheet_password || '';
+  document.getElementById('editVideoLink').value = b.video_link || '';
+  document.getElementById('editRoutineLink').value = b.routine_link || '';
+  document.getElementById('editSheetLink').value = b.sheet_link || '';
+  document.getElementById('editNotice').value = b.notice || '';
+  document.getElementById('editNoticeLink').value = b.notice_link || '';
+  document.getElementById('routineFileInfo').style.display = (b.routine_link && b.routine_link.includes('/object/public/materials/')) ? 'block' : 'none';
+  document.getElementById('sheetFileInfo').style.display = (b.sheet_link && b.sheet_link.includes('/object/public/materials/')) ? 'block' : 'none';
+  document.querySelectorAll('.admin-page').forEach(p => p.classList.remove('active'));
+  document.getElementById('admin-batch-edit').classList.add('active');
+}
+
+async function saveBatchInfo(){
+  if(!currentEditBatchId) return showToast('ব্যাচ সিলেক্ট হয়নি', 'error');
+  const name = document.getElementById('editBatchName').value.trim();
+  const password = document.getElementById('editBatchPassword').value.trim();
+  const sheet_password = document.getElementById('editSheetPassword').value.trim();
+  if(!name || !password) return showToast('নাম ও পাসওয়ার্ড আবশ্যক', 'error');
+  try{
+    await api(`batches?id=eq.${currentEditBatchId}`, 'PATCH', { name, password, sheet_password });
+    document.getElementById('editBatchTitle').textContent = '✏️ ' + name;
+    showToast('✅ তথ্য সংরক্ষিত');
+    await refreshGlobalBatches();
+  }catch(e){ showToast('❌ ব্যর্থ', 'error'); }
+}
+
+async function saveNotice(){
+  if(!currentEditBatchId) return;
+  const notice = document.getElementById('editNotice').value.trim();
+  const nl = ensureUrl(document.getElementById('editNoticeLink').value.trim());
+  try{ await api(`batches?id=eq.${currentEditBatchId}`, 'PATCH', { notice, notice_link:nl }); showToast('✅ নোটিশ সংরক্ষিত'); await refreshGlobalBatches(); }
+  catch(e){ showToast('❌ ব্যর্থ', 'error'); }
+}
+
+async function saveRoutineLink(){
+  if(!currentEditBatchId) return;
+  let link = ensureUrl(document.getElementById('editRoutineLink').value.trim());
+  const fi = document.getElementById('routineFile');
+  if(fi.files[0]){
+    try{ showToast('📤 আপলোড হচ্ছে...', 'info'); link = await uploadFile(fi.files[0], 'routine'); document.getElementById('editRoutineLink').value = link; }
+    catch(e){ return showToast('❌ ' + e.message, 'error'); }
+  }
+  try{ await api(`batches?id=eq.${currentEditBatchId}`, 'PATCH', { routine_link:link }); showToast('✅ রুটিন সংরক্ষিত'); await refreshGlobalBatches(); }
+  catch(e){ showToast('❌ ব্যর্থ', 'error'); }
+}
+
+async function saveSheetLink(){
+  if(!currentEditBatchId) return;
+  let link = ensureUrl(document.getElementById('editSheetLink').value.trim());
+  const fi = document.getElementById('sheetFile');
+  if(fi.files[0]){
+    try{ showToast('📤 আপলোড হচ্ছে...', 'info'); link = await uploadFile(fi.files[0], 'sheets'); document.getElementById('editSheetLink').value = link; }
+    catch(e){ return showToast('❌ ' + e.message, 'error'); }
+  }
+  try{ await api(`batches?id=eq.${currentEditBatchId}`, 'PATCH', { sheet_link:link }); showToast('✅ শিট সংরক্ষিত'); await refreshGlobalBatches(); }
+  catch(e){ showToast('❌ ব্যর্থ', 'error'); }
+}
+
+async function saveVideoLink(){
+  if(!currentEditBatchId) return;
+  const vl = ensureUrl(document.getElementById('editVideoLink').value.trim());
+  try{ await api(`batches?id=eq.${currentEditBatchId}`, 'PATCH', { video_link:vl }); showToast('✅ ভিডিও লিংক সংরক্ষিত'); await refreshGlobalBatches(); }
+  catch(e){ showToast('❌ ব্যর্থ', 'error'); }
+}
+
+async function deleteUploadedFile(type){
+  if(!currentEditBatchId) return;
+  const field = type === 'routine' ? 'routine_link' : 'sheet_link';
+  const b = globalBatches.find(x => x.id == currentEditBatchId);
+  if(!b || !b[field]) return;
+  if(!confirm('আপলোডকৃত ফাইলটি মুছবেন?')) return;
+  try{
+    await deleteStorageFile(b[field]);
+    await api(`batches?id=eq.${currentEditBatchId}`, 'PATCH', { [field]:'' });
+    document.getElementById(type === 'routine' ? 'editRoutineLink' : 'editSheetLink').value = '';
+    document.getElementById(type === 'routine' ? 'routineFileInfo' : 'sheetFileInfo').style.display = 'none';
+    showToast('✅ ফাইল মুছে ফেলা হয়েছে');
+    await refreshGlobalBatches();
+  }catch(e){ showToast('❌ মুছতে ব্যর্থ: ' + e.message, 'error'); }
+}
+
+let batchDeleteTargetId = null;
+
+function escHtml(v){
+  return String(v ?? '').replace(/[&<>"']/g, s => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  }[s]));
+}
+
+function closeBatchDeleteConfirm(){
+  const modal = document.getElementById('batchDeleteModal');
+  if(modal) modal.remove();
+  batchDeleteTargetId = null;
+}
+
+function openBatchDeleteConfirm(batch){
+  closeBatchDeleteConfirm();
+  batchDeleteTargetId = batch.id;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay show';
+  overlay.id = 'batchDeleteModal';
+  overlay.innerHTML = `
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-title">⚠️ ব্যাচ মুছে ফেলবেন?</div>
+      <p style="font-size:.9em;color:var(--gray);margin-bottom:14px;line-height:1.6">
+        এই ব্যাচটি এবং এর সব সংশ্লিষ্ট ডেটা স্থায়ীভাবে মুছে যাবে।
+      </p>
+      <div class="modal-info-row"><span>ব্যাচের নাম</span><span>${escHtml(batch.name)}</span></div>
+      <div class="modal-info-row"><span>স্টুডেন্ট</span><span>${batch.studentCount} জন</span></div>
+      <div class="modal-info-row"><span>টেস্ট</span><span>${batch.testCount} টি</span></div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeBatchDeleteConfirm()">বাতিল</button>
+        <button class="btn btn-danger" onclick="confirmDeleteBatch()">হ্যাঁ, মুছে দাও</button>
+      </div>
+    </div>
+  `;
+  overlay.addEventListener('click', closeBatchDeleteConfirm);
+  document.body.appendChild(overlay);
+}
+
+async function confirmDeleteBatch(){
+  const id = batchDeleteTargetId;
+  if(!id) return;
+  closeBatchDeleteConfirm();
+
+  try{
+    showToast('🗑️ ব্যাচ ডিলিট হচ্ছে...', 'info');
+
+    const batchRes = await api(`batches?id=eq.${id}`);
+    const batch = batchRes?.[0];
+    if(!batch){
+      showToast('❌ ব্যাচ পাওয়া যায়নি', 'error');
+      return;
+    }
+
+    // ১. batch-এর সব students fetch করো
+    const students = await api(`students?batch_id=eq.${id}&select=id`);
+
+    // ২. batch-এর সব tests fetch করো
+    const tests = await api(`tests?batch_id=eq.${id}&select=id`);
+
+    // ৩. প্রতিটা test-এর জন্য attempts fetch করো (test_id দিয়ে)
+    // ৪. প্রতিটা attempt-এর জন্য answers delete করো (attempt_id দিয়ে)
+    // ৫. সব attempts delete করো (test_id দিয়ে)
+    // ৬. সব test_questions delete করো (test_id দিয়ে)
+    for(const t of tests){
+      const attempts = await api(`attempts?test_id=eq.${t.id}&select=id`);
+      await api(`attempts?test_id=eq.${t.id}`, 'DELETE');
+      await api(`test_questions?test_id=eq.${t.id}`, 'DELETE');
+    }
+
+    // ৭. প্রতিটা student-এর attempts fetch করো
+    // ৮. প্রতিটা attempt-এর answers delete করো
+    // ৯. সব attempts delete করো (student_id দিয়ে)
+    for(const s of students){
+      const attempts = await api(`attempts?student_id=eq.${s.id}&select=id`);
+      await api(`attempts?student_id=eq.${s.id}`, 'DELETE');
+    }
+
+    // ১০. সব students delete করো (batch_id দিয়ে)
+    await api(`students?batch_id=eq.${id}`, 'DELETE');
+
+    // ১১. সব tests delete করো (batch_id দিয়ে)
+    await api(`tests?batch_id=eq.${id}`, 'DELETE');
+
+    // ১২. batches delete করো (id দিয়ে)
+    await api(`batches?id=eq.${id}`, 'DELETE');
+
+    showToast('✅ ব্যাচ মুছে ফেলা হয়েছে');
+    await refreshGlobalBatches();
+    loadAdminBatches();
+  }catch(e){
+    showToast('❌ ব্যর্থ: ' + (e.message || 'অজানা ত্রুটি'), 'error');
+  }
+}
+
+async function deleteBatch(id){
+  try{
+    const [batchRes, students, tests] = await Promise.all([
+      api(`batches?id=eq.${id}`),
+      api(`students?batch_id=eq.${id}&select=id`),
+      api(`tests?batch_id=eq.${id}&select=id`)
+    ]);
+
+    const batch = batchRes?.[0];
+    if(!batch){
+      showToast('❌ ব্যাচ পাওয়া যায়নি', 'error');
+      return;
+    }
+
+    openBatchDeleteConfirm({
+      id: batch.id,
+      name: batch.name || 'ব্যাচ',
+      studentCount: students.length,
+      testCount: tests.length
+    });
+  }catch(e){
+    showToast('❌ ব্যর্থ: ' + (e.message || 'অজানা ত্রুটি'), 'error');
+  }
+}
+
+
+// ══ BUILDER: CSV আপলোড করে সরাসরি টেস্ট তৈরি ══
+
+function uploadCSVToBuilder(){
+  // পুরনো compatibility - এখন preview-এ ফরোয়ার্ড করো
+  previewCSVForBuilder();
+}
+
+// Builder এর জন্য CSV preview data
+let _builderCsvPreview = [];
+
+function previewCSVForBuilder(){
+  const file = document.getElementById('builderCsvFile')?.files?.[0];
+  if(!file) return showToast('CSV ফাইল সিলেক্ট করুন', 'error');
+  const subject = document.getElementById('builderCsvSubject')?.value || '';
+  if(!subject || !VALID_SUBJECT_CODES.has(subject)) return showToast('আগে বিষয় নির্বাচন করুন', 'error');
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const qs = parseCSV(e.target.result);
+    if(!qs.length) return showToast('CSV খালি বা ফরম্যাট ভুল', 'error');
+    qs.forEach(q => { if(!q.subject) q.subject = subject; });
+    _builderCsvPreview = qs;
+    renderBuilderCSVPreview(qs, subject);
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function renderBuilderCSVPreview(qs, subject){
+  const correctOpts = ['a','b','c','d'];
+  const lblMap = {a:'ক', b:'খ', c:'গ', d:'ঘ'};
+  const tbody = document.getElementById('builderCsvPreviewBody');
+  tbody.innerHTML = qs.map((q, i) => `
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:5px 6px;border:1px solid #eee;text-align:center;color:var(--gray-mid)">${i+1}</td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="question_ar" rows="2" dir="auto" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical;font-family:'Noto Serif Bengali',Amiri,serif">${escHtml(q.question_ar||'')}</textarea></td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="opt_a" rows="2" dir="auto" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical;font-family:'Noto Serif Bengali',Amiri,serif">${escHtml(q.opt_a||'')}</textarea></td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="opt_b" rows="2" dir="auto" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical;font-family:'Noto Serif Bengali',Amiri,serif">${escHtml(q.opt_b||'')}</textarea></td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="opt_c" rows="2" dir="auto" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical;font-family:'Noto Serif Bengali',Amiri,serif">${escHtml(q.opt_c||'')}</textarea></td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="opt_d" rows="2" dir="auto" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical;font-family:'Noto Serif Bengali',Amiri,serif">${escHtml(q.opt_d||'')}</textarea></td>
+      <td style="padding:4px;text-align:center">
+        <select data-i="${i}" data-f="correct" style="width:52px;padding:4px;border:1px solid #ddd;border-radius:5px;font-size:.85em">
+          ${correctOpts.map(o=>`<option value="${o}" ${q.correct===o?'selected':''}>${lblMap[o]}</option>`).join('')}
+        </select>
+      </td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="explanation_bn" rows="2" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical">${escHtml(q.explanation_bn||'')}</textarea></td>
+      <td style="padding:4px;text-align:center">
+        <button onclick="removeBuilderCsvRow(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:1.1em" title="বাদ দিন">✖</button>
+      </td>
+    </tr>`).join('');
+
+  // live edit
+  tbody.querySelectorAll('textarea, select').forEach(el => {
+    el.addEventListener('input', () => {
+      const i = +el.dataset.i;
+      const f = el.dataset.f;
+      if(_builderCsvPreview[i]) _builderCsvPreview[i][f] = el.value;
+    });
+  });
+
+  document.getElementById('builderCsvPreviewTitle').textContent = `${qs.length}টি প্রশ্ন প্রস্তুত — প্রয়োজনে এডিট করুন (${subjectLabel(subject)})`;
+  document.getElementById('builderCsvPreviewSection').style.display = 'block';
+  document.getElementById('builderCsvPreviewSection').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function removeBuilderCsvRow(i){
+  _builderCsvPreview.splice(i, 1);
+  const subject = document.getElementById('builderCsvSubject')?.value || '';
+  renderBuilderCSVPreview(_builderCsvPreview, subject);
+}
+
+function cancelBuilderCSVPreview(){
+  _builderCsvPreview = [];
+  document.getElementById('builderCsvPreviewSection').style.display = 'none';
+  document.getElementById('builderCsvFile').value = '';
+}
+
+function confirmBuilderCSVPreview(){
+  if(!_builderCsvPreview.length) return showToast('কোনো প্রশ্ন নেই', 'error');
+  // sync last edits
+  document.querySelectorAll('#builderCsvPreviewBody textarea, #builderCsvPreviewBody select').forEach(el => {
+    const i = +el.dataset.i;
+    const f = el.dataset.f;
+    if(_builderCsvPreview[i] !== undefined) _builderCsvPreview[i][f] = el.value;
+  });
+  const qs = _builderCsvPreview.filter(q => q.question_ar && q.question_ar.trim());
+  if(!qs.length) return showToast('কোনো প্রশ্ন নেই', 'error');
+
+  // builderUploadedQuestions-এ যোগ করো (duplicate এড়াতে)
+  let added = 0;
+  qs.forEach(q => {
+    const isDup = builderUploadedQuestions.some(x => x.question_ar === q.question_ar);
+    if(!isDup){ builderUploadedQuestions.push(q); added++; }
+  });
+
+  const subject = document.getElementById('builderCsvSubject')?.value || '';
+  const statusEl = document.getElementById('builderUploadStatus');
+  statusEl.textContent = `✅ ${added}টি প্রশ্ন যোগ হয়েছে — ${subjectLabel(subject)} (মোট: ${builderUploadedQuestions.length}টি)`;
+  statusEl.style.display = 'block';
+  renderBuilderList();
+  showToast(`✅ ${added}টি প্রশ্ন বিল্ডারে যোগ হয়েছে`);
+  cancelBuilderCSVPreview();
+}
+
+function renderBuilderList(){
+  const q = (document.getElementById('builderSearch')?.value || '').toLowerCase();
+  const labels = optionLetters(document.getElementById('bOptLang')?.value || 'ar');
+  const list = builderUploadedQuestions.filter(x =>
+    !q || [x.question_ar, x.opt_a, x.opt_b, x.opt_c, x.opt_d].join(' ').toLowerCase().includes(q)
+  );
+  document.getElementById('builderCountBadge').textContent = builderUploadedQuestions.length + 'টি';
+  document.getElementById('builderList').innerHTML = list.length
+    ? list.map((x, i) => `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px;border-bottom:1px solid var(--border);background:${x._selected===false?'var(--red-pale)':'#fff'}">
+        <input type="checkbox" id="bq-${i}" ${x._selected===false?'':'checked'} onchange="toggleBuilderQ(${builderUploadedQuestions.indexOf(x)})" style="margin-top:4px;width:16px;height:16px;cursor:pointer;flex-shrink:0">
+        <label for="bq-${i}" style="flex:1;cursor:pointer">
+          <div style="font-size:.95em;font-weight:600;margin-bottom:3px">${escHtml(x.question_ar || '')}</div>
+          <div style="font-size:.8em;color:var(--gray-mid)">${labels[0]}) ${escHtml(x.opt_a||'')} | ${labels[1]}) ${escHtml(x.opt_b||'')} | ${labels[2]}) ${escHtml(x.opt_c||'')} | ${labels[3]}) ${escHtml(x.opt_d||'')}</div>
+          <div style="font-size:.78em;color:var(--green);margin-top:2px">✓ সঠিক: ${escHtml((x.correct||'').toUpperCase())}</div>
+        </label>
+        <button class="btn btn-small btn-danger" onclick="removeBuilderQ(${builderUploadedQuestions.indexOf(x)})" style="flex-shrink:0">✕</button>
+      </div>`).join('')
+    : '<div class="empty-msg">কোনো প্রশ্ন নেই</div>';
+}
+
+function filterBuilderList(){
+  renderBuilderList();
+}
+
+function toggleBuilderQ(idx){
+  if(builderUploadedQuestions[idx]._selected === false){
+    delete builderUploadedQuestions[idx]._selected;
+  } else {
+    builderUploadedQuestions[idx]._selected = false;
+  }
+  renderBuilderList();
+}
+
+function removeBuilderQ(idx){
+  builderUploadedQuestions.splice(idx, 1);
+  renderBuilderList();
+}
+
+function selectAllBuilder(){
+  builderUploadedQuestions.forEach(q => delete q._selected);
+  renderBuilderList();
+  showToast('সব প্রশ্ন নির্বাচিত হয়েছে');
+}
+
+function clearBuilderList(){
+  if(!builderUploadedQuestions.length) return;
+  if(!confirm('সব প্রশ্ন মুছে ফেলবেন?')) return;
+  builderUploadedQuestions = [];
+  renderBuilderList();
+  document.getElementById('builderUploadStatus').style.display = 'none';
+}
+
+async function refreshQuestionFilterOptions(selected=''){
+  try{
+    if(!allTestsCache.length){
+      allTestsCache = await api('tests?select=id,name&order=id.desc');
+    }
+    const el = document.getElementById('qTestFilter');
+    if(el){
+      const current = selected || el.value || '';
+      el.innerHTML = '<option value="">সব টেস্ট</option>' + allTestsCache.map(t => `<option value="${t.id}">${escHtml(t.name || ('টেস্ট #' + t.id))}</option>`).join('');
+      el.value = current;
+    }
+  }catch(_){}
+}
+
+async function saveTestFromBuilder(){
+  const name = document.getElementById('bTestName').value.trim();
+  const bId = document.getElementById('bBatchSelect').value;
+  const dur = parseInt(document.getElementById('bDuration').value) || 25;
+  const marks = parseInt(document.getElementById('bTotalMarks').value) || 30;
+  const passPercentRaw = parseInt(document.getElementById('bPassPercent').value);
+  const passPercent = Number.isFinite(passPercentRaw) ? Math.max(1, Math.min(100, passPercentRaw)) : 40;
+  const neg = parseFloat(document.getElementById('bNegMark').value) || 0.25;
+  const optLang = ['ar','bn','en'].includes(document.getElementById('bOptLang').value) ? document.getElementById('bOptLang').value : 'ar';
+  const categoryRaw = document.getElementById('bCategory')?.value || 'regular';
+  const category = ['regular','revision','mega_revision','full_model','extra'].includes(categoryRaw) ? categoryRaw : 'regular';
+  const schedRaw = document.getElementById('bScheduledAt')?.value || '';
+  // datetime-local → UTC ISO (ঢাকা GMT+6 ধরে)
+  const scheduled_at = schedRaw ? new Date(schedRaw + ':00+06:00').toISOString() : null;
+  if(!name) return showToast('পরীক্ষার নাম লিখুন', 'error');
+  if(!bId) return showToast('ব্যাচ নির্বাচন করুন', 'error');
+  const selectedQs = builderUploadedQuestions.filter(q => q._selected !== false);
+  if(!selectedQs.length) return showToast('কমপক্ষে ১টি প্রশ্ন নির্বাচন করুন', 'error');
+  try{
+    showToast('⏳ টেস্ট তৈরি হচ্ছে...', 'info');
+    const savedQs = await api('questions', 'POST', selectedQs.map(q => ({
+      question_ar: q.question_ar,
+      opt_a: q.opt_a,
+      opt_b: q.opt_b,
+      opt_c: q.opt_c,
+      opt_d: q.opt_d,
+      correct: q.correct,
+      explanation_bn: q.explanation_bn || '',
+      subject: VALID_SUBJECT_CODES.has(q.subject) ? q.subject : 'general_other'
+    })));
+    const t = await api('tests', 'POST', {
+      name,
+      batch_id: parseInt(bId),
+      duration_minutes: dur,
+      total_marks: marks,
+      negative_mark: neg,
+      pass_percent: passPercent,
+      option_lang: optLang,
+      category,
+      scheduled_at
+    });
+    const testId = t[0].id;
+    await api('test_questions', 'POST', savedQs.map(q => ({ test_id:testId, question_id:q.id })));
+    showToast(`✅ টেস্ট তৈরি হয়েছে! ${selectedQs.length}টি প্রশ্ন যোগ হয়েছে`);
+    builderUploadedQuestions = [];
+    document.getElementById('bTestName').value = '';
+    document.getElementById('builderUploadStatus').style.display = 'none';
+    document.getElementById('bPassPercent').value = '40';
+    renderBuilderList();
+    allTestsCache = [];
+    loadAdminDashboard();
+    switchAdminTab('dash', document.querySelector('.sidebar .nav-item'));
+  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
+}
+
+// পুরাতন function গুলো (প্রশ্ন ব্যাংক ট্যাবের জন্য রাখা হয়েছে) (প্রশ্ন ব্যাংক ট্যাবের জন্য রাখা হয়েছে)
+function renderBuilder(){ }
+async function loadBuilder(){
+  if(document.getElementById('builderAvailable')) renderBuilderList();
+  // builderCsvSubject dropdown ভর্তি করো
+  const bSel = document.getElementById('builderCsvSubject');
+  if(bSel && !bSel.dataset.populated){
+    bSel.innerHTML = '<option value="">— বিষয় নির্বাচন করুন —</option>' + subjectOptionsHtml('', false);
+    bSel.dataset.populated = '1';
+  }
+}
+function addQToBuilder(id){ }
+function removeQFromBuilder(id){ }
+async function saveTest(){ await saveTestFromBuilder(); }
+
+async function loadQuestions(){
+  const q = (document.getElementById('qSearch')?.value || '').toLowerCase();
+  const selectedTestId = document.getElementById('qTestFilter')?.value || '';
+  const selectedSubject = document.getElementById('qSubjectFilter')?.value || '';
+  await refreshQuestionFilterOptions(selectedTestId);
+
+  let data = [];
+  if(selectedTestId){
+    const links = await api(`test_questions?test_id=eq.${selectedTestId}&select=question_id`);
+    const ids = [...new Set((links || []).map(x => x.question_id).filter(Boolean))];
+    data = ids.length ? await api(`questions?id=in.(${ids.join(',')})&order=id.desc`) : [];
+  }else{
+    data = await api('questions?order=id.desc');
+  }
+
+  data = (data || []).sort((a,b) => (b.id || 0) - (a.id || 0));
+
+  // মোট সব subject-এর গণনা (filter applying-এর আগে — যাতে stats সঠিক থাকে)
+  const allCount = data.length;
+  const subjectCounts = {};
+  data.forEach(d => {
+    const s = d.subject || 'general_other';
+    subjectCounts[s] = (subjectCounts[s] || 0) + 1;
+  });
+
+  // subject filter apply
+  if(selectedSubject){
+    data = data.filter(d => (d.subject || 'general_other') === selectedSubject);
+  }
+
+  const rows = data.filter(x => !q || [x.question_ar, x.opt_a, x.opt_b, x.opt_c, x.opt_d, x.correct].join(' ').toLowerCase().includes(q));
+  currentQuestionRows = rows;
+  const allSelected = rows.length > 0 && rows.every(x => selectedQuestionIds.has(x.id));
+  const selAll = document.getElementById('qSelectAll');
+  if(selAll) selAll.checked = allSelected;
+
+  document.getElementById('adminQBody').innerHTML = rows.length ? rows.map((x, i) => `<tr>
+    <td><input type="checkbox" ${selectedQuestionIds.has(x.id) ? 'checked' : ''} onchange="toggleQuestionSelect(${x.id}, this.checked)" style="width:16px;height:16px;cursor:pointer"></td>
+    <td>${i + 1}</td>
+    <td style="max-width:480px">${escHtml(x.question_ar || '')}<div class="help-text">A) ${escHtml(x.opt_a || '')} | B) ${escHtml(x.opt_b || '')} | C) ${escHtml(x.opt_c || '')} | D) ${escHtml(x.opt_d || '')}</div></td>
+    <td><span class="badge" style="background:var(--blue);color:#fff;font-size:.78em;white-space:nowrap">${escHtml(subjectLabel(x.subject))}</span></td>
+    <td><span class="badge badge-b">${escHtml((x.correct || '').toUpperCase())}</span></td>
+    <td>
+      <button class="btn btn-small btn-gold" onclick="openQuestionEdit(${x.id})">✏️</button>
+      <button class="btn btn-small btn-danger" onclick="deleteQuestion(${x.id})">🗑</button>
+    </td>
+  </tr>`).join('') : '<tr><td colspan="6" class="empty-msg">কোনো প্রশ্ন নেই</td></tr>';
+
+  // subject stats
+  const statsEl = document.getElementById('qSubjectStats');
+  if(statsEl){
+    const arabicStats = SUBJECTS.filter(s => s.group === 'arabic')
+      .map(s => `${s.label}: <b>${subjectCounts[s.code] || 0}</b>`).join(' • ');
+    const generalStats = SUBJECTS.filter(s => s.group === 'general')
+      .map(s => `${s.label}: <b>${subjectCounts[s.code] || 0}</b>`).join(' • ');
+    const otherCount = subjectCounts['general_other'] || 0;
+    statsEl.innerHTML = `<div style="margin-bottom:4px"><b>📊 মোট প্রশ্ন: ${allCount}টি</b></div>
+      <div style="margin-bottom:3px">📘 আরবি অংশ — ${arabicStats}</div>
+      <div style="margin-bottom:3px">📗 জেনারেল অংশ — ${generalStats}</div>
+      ${otherCount ? `<div style="color:var(--red)">⚠️ শ্রেণিবিহীন: <b>${otherCount}</b>টি (এডিট করে বিষয় ঠিক করুন)</div>` : ''}`;
+  }
+
+  // subject filter dropdown ভর্তি করো (current value preserved)
+  const subFilter = document.getElementById('qSubjectFilter');
+  if(subFilter && !subFilter.dataset.populated){
+    subFilter.innerHTML = subjectOptionsHtml('', true, 'সব বিষয়');
+    subFilter.dataset.populated = '1';
+  }
+  // qbCsvSubject dropdown (CSV আপলোডের জন্য) ভর্তি করো
+  const csvSel = document.getElementById('qbCsvSubject');
+  if(csvSel && !csvSel.dataset.populated){
+    csvSel.innerHTML = '<option value="">— বিষয় নির্বাচন করুন —</option>' + subjectOptionsHtml('', false);
+    csvSel.dataset.populated = '1';
+  }
+
+  if(document.getElementById('builderAvailable')) builderQuestionPool = data;
+}
+
+function toggleQuestionSelect(id, checked){
+  if(checked) selectedQuestionIds.add(id);
+  else selectedQuestionIds.delete(id);
+}
+
+function toggleAllQuestions(checked){
+  currentQuestionRows.forEach(q => {
+    if(checked) selectedQuestionIds.add(q.id);
+    else selectedQuestionIds.delete(q.id);
+  });
+  loadQuestions();
+}
+
+async function deleteSelectedQuestions(){
+  const ids = [...selectedQuestionIds];
+  if(!ids.length) return showToast('কোনো প্রশ্ন নির্বাচন করা নেই', 'error');
+  if(!confirm(`নির্বাচিত ${ids.length}টি প্রশ্ন মুছবেন?`)) return;
+  try{
+    await api(`test_questions?question_id=in.(${ids.join(',')})`, 'DELETE');
+    await api(`questions?id=in.(${ids.join(',')})`, 'DELETE');
+    ids.forEach(id => selectedQuestionIds.delete(id));
+    showToast('✅ নির্বাচিত প্রশ্ন মুছে ফেলা হয়েছে');
+    loadQuestions();
+    loadBuilder();
+  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
+}
+
+async function sendSelectedToBuilder(){
+  const ids = [...selectedQuestionIds];
+  if(!ids.length) return showToast('কোনো প্রশ্ন নির্বাচন করা নেই', 'error');
+  try{
+    // DB থেকে fetch করো (filter চললেও সব selected পাব)
+    const selected = await api(`questions?id=in.(${ids.join(',')})`);
+    if(!selected || !selected.length) return showToast('নির্বাচিত প্রশ্ন পাওয়া যায়নি', 'error');
+    let added = 0, skipped = 0;
+    selected.forEach(q => {
+      const isDup = builderUploadedQuestions.some(x => x.question_ar === q.question_ar);
+      if(!isDup){ builderUploadedQuestions.push({...q}); added++; }
+      else skipped++;
+    });
+    // টেস্ট বিল্ডার ট্যাবে যাও
+    switchAdminTab('builder', document.querySelector('.sidebar .nav-item:nth-child(3)'));
+    // জোর করে বিল্ডার লিস্ট রেন্ডার করো (loadBuilder-এ shortcut থাকতে পারে)
+    setTimeout(() => {
+      renderBuilderList();
+      // status দেখাও
+      const statusEl = document.getElementById('builderUploadStatus');
+      if(statusEl){
+        statusEl.textContent = `✅ প্রশ্নব্যাংক থেকে ${added}টি প্রশ্ন যোগ হয়েছে${skipped ? ` (${skipped}টি duplicate বাদ)` : ''} — মোট: ${builderUploadedQuestions.length}টি`;
+        statusEl.style.display = 'block';
+      }
+    }, 100);
+    showToast(`✅ ${added}টি প্রশ্ন বিল্ডারে পাঠানো হয়েছে${skipped ? ` (${skipped}টি duplicate বাদ)` : ''}`);
+    // selection clear করো
+    selectedQuestionIds.clear();
+  }catch(e){ showToast('❌ ব্যর্থ: ' + (e.message || 'অজানা'), 'error'); }
+}
+
+async function exportQuestionsCSV(){
+  const ids = [...selectedQuestionIds];
+  let rows;
+  if(ids.length){
+    // নির্বাচিত থাকলে শুধু সেগুলো — DB থেকে আনো (filter বাইরের প্রশ্নও থাকবে)
+    try{ rows = await api(`questions?id=in.(${ids.join(',')})&select=question_ar,opt_a,opt_b,opt_c,opt_d,correct,explanation_bn,subject`); }
+    catch(_){ rows = []; }
+    if(!rows || !rows.length) return showToast('নির্বাচিত প্রশ্ন পাওয়া যায়নি', 'error');
+    showToast(`📤 ${rows.length}টি নির্বাচিত প্রশ্ন এক্সপোর্ট হচ্ছে`);
+  }else{
+    if(!currentQuestionRows.length) return showToast('রপ্তানি করার মতো প্রশ্ন নেই', 'error');
+    rows = currentQuestionRows;
+    showToast(`📤 ${rows.length}টি প্রশ্ন এক্সপোর্ট হচ্ছে (সব)`);
+  }
+  downloadCSV('questions.csv', rows, ['question_ar','opt_a','opt_b','opt_c','opt_d','correct','explanation_bn','subject']);
+}
+
+async function openQuestionEdit(id){
+  const q = currentQuestionRows.find(x => x.id == id) || (await api(`questions?id=eq.${id}`))?.[0];
+  if(!q) return showToast('প্রশ্ন পাওয়া যায়নি', 'error');
+  document.getElementById('questionEditId').value = q.id;
+  document.getElementById('questionEditAr').value = q.question_ar || '';
+  document.getElementById('questionEditA').value = q.opt_a || '';
+  document.getElementById('questionEditB').value = q.opt_b || '';
+  document.getElementById('questionEditC').value = q.opt_c || '';
+  document.getElementById('questionEditD').value = q.opt_d || '';
+  document.getElementById('questionEditCorrect').value = (q.correct || 'a').toLowerCase();
+  document.getElementById('questionEditExplanation').value = q.explanation_bn || '';
+  // subject dropdown ভর্তি করো (current value selected)
+  const subSel = document.getElementById('questionEditSubject');
+  const curSub = VALID_SUBJECT_CODES.has(q.subject) ? q.subject : 'general_other';
+  subSel.innerHTML = subjectOptionsHtml(curSub, false);
+  openModal('questionEditModal');
+}
+
+function closeQuestionEditModal(){
+  closeModal('questionEditModal');
+}
+
+async function saveQuestionEdit(){
+  const id = parseInt(document.getElementById('questionEditId').value);
+  if(!id) return;
+  const subject = document.getElementById('questionEditSubject').value || 'general_other';
+  if(!VALID_SUBJECT_CODES.has(subject)) return showToast('সঠিক বিষয় নির্বাচন করুন', 'error');
+  const payload = {
+    question_ar: document.getElementById('questionEditAr').value.trim(),
+    opt_a: document.getElementById('questionEditA').value.trim(),
+    opt_b: document.getElementById('questionEditB').value.trim(),
+    opt_c: document.getElementById('questionEditC').value.trim(),
+    opt_d: document.getElementById('questionEditD').value.trim(),
+    correct: document.getElementById('questionEditCorrect').value.trim().toLowerCase(),
+    explanation_bn: document.getElementById('questionEditExplanation').value.trim(),
+    subject
+  };
+  if(!payload.question_ar) return showToast('প্রশ্ন লিখুন', 'error');
+  try{
+    await api(`questions?id=eq.${id}`, 'PATCH', payload);
+    showToast('✅ প্রশ্ন আপডেট হয়েছে');
+    closeQuestionEditModal();
+    loadQuestions();
+    loadBuilder();
+  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
+}
+
+async function deleteQuestion(id){
+  if(!confirm('প্রশ্নটি মুছবেন?')) return;
+  try{
+    await api(`test_questions?question_id=eq.${id}`, 'DELETE');
+    await api(`questions?id=eq.${id}`, 'DELETE');
+    selectedQuestionIds.delete(id);
+    showToast('✅ প্রশ্ন মুছে ফেলা হয়েছে');
+    loadQuestions();
+    loadBuilder();
+  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
+}
+
+// ══ TEST EDIT ══
+async function openTestEdit(id){
+  try{
+    const t = await api(`tests?id=eq.${id}`);
+    if(!t.length) return showToast('পরীক্ষা পাওয়া যায়নি', 'error');
+    const test = t[0];
+    document.getElementById('testEditId').value = test.id;
+    document.getElementById('testEditName').value = test.name || '';
+    document.getElementById('testEditDuration').value = test.duration_minutes ?? 25;
+    document.getElementById('testEditTotalMarks').value = test.total_marks ?? 30;
+    document.getElementById('testEditPassPercent').value = test.pass_percent ?? 40;
+    document.getElementById('testEditNegMark').value = test.negative_mark ?? 0.25;
+    const lang = ['ar','bn','en'].includes(test.option_lang) ? test.option_lang : 'ar';
+    document.getElementById('testEditOptLang').value = lang;
+    const validCats = ['regular','revision','mega_revision','full_model','extra'];
+    document.getElementById('testEditCategory').value = validCats.includes(test.category) ? test.category : 'regular';
+    // scheduled_at: UTC → local datetime-local (GMT+6)
+    const schedEl = document.getElementById('testEditScheduledAt');
+    if(test.scheduled_at){
+      // UTC → Dhaka local string for datetime-local input
+      const d = new Date(test.scheduled_at);
+      const offset = 6 * 60; // GMT+6 in minutes
+      const local = new Date(d.getTime() + offset * 60000);
+      schedEl.value = local.toISOString().slice(0,16);
+    } else { schedEl.value = ''; }
+    openModal('testEditModal');
+  }catch(e){ showToast('❌ লোড ব্যর্থ: ' + e.message, 'error'); }
+}
+
+function closeTestEditModal(){
+  closeModal('testEditModal');
+}
+
+async function saveTestEdit(){
+  const id = parseInt(document.getElementById('testEditId').value);
+  if(!id) return;
+  const name = document.getElementById('testEditName').value.trim();
+  if(!name) return showToast('পরীক্ষার নাম লিখুন', 'error');
+  const duration = parseInt(document.getElementById('testEditDuration').value) || 25;
+  const totalMarks = parseInt(document.getElementById('testEditTotalMarks').value) || 30;
+  const passRaw = parseInt(document.getElementById('testEditPassPercent').value);
+  const passPercent = Number.isFinite(passRaw) ? Math.max(1, Math.min(100, passRaw)) : 40;
+  const negMark = parseFloat(document.getElementById('testEditNegMark').value);
+  const negative_mark = Number.isFinite(negMark) && negMark >= 0 ? negMark : 0.25;
+  const langSel = document.getElementById('testEditOptLang').value;
+  const option_lang = ['ar','bn','en'].includes(langSel) ? langSel : 'ar';
+  const catSel = document.getElementById('testEditCategory').value;
+  const category = ['regular','revision','mega_revision','full_model','extra'].includes(catSel) ? catSel : 'regular';
+  const schedRaw = document.getElementById('testEditScheduledAt')?.value || '';
+  const scheduled_at = schedRaw ? new Date(schedRaw + ':00+06:00').toISOString() : null;
+  try{
+    await api(`tests?id=eq.${id}`, 'PATCH', {
+      name,
+      duration_minutes: duration,
+      total_marks: totalMarks,
+      pass_percent: passPercent,
+      negative_mark,
+      option_lang,
+      category,
+      scheduled_at
+    });
+    showToast('✅ পরীক্ষা আপডেট হয়েছে');
+    closeTestEditModal();
+    allTestsCache = [];
+    loadAdminDashboard();
+  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
+}
+
+// CSV Preview এর জন্য global array
+let _csvPreviewData = [];
+
+function previewCSV(inputId='qbCsvFile'){
+  const file = document.getElementById(inputId)?.files?.[0];
+  if(!file) return showToast('CSV ফাইল সিলেক্ট করুন', 'error');
+  const subject = document.getElementById('qbCsvSubject')?.value || '';
+  if(!subject || !VALID_SUBJECT_CODES.has(subject)) return showToast('আগে বিষয় নির্বাচন করুন', 'error');
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const qs = parseCSV(e.target.result);
+    if(!qs.length) return showToast('CSV খালি বা ফরম্যাট ভুল', 'error');
+    qs.forEach(q => { if(!q.subject) q.subject = subject; });
+    _csvPreviewData = qs;
+    renderCSVPreview(qs, subject);
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function renderCSVPreview(qs, subject){
+  const correctOpts = ['a','b','c','d'];
+  const lblMap = {a:'ক', b:'খ', c:'গ', d:'ঘ'};
+  const tbody = document.getElementById('csvPreviewBody');
+  tbody.innerHTML = qs.map((q, i) => `
+    <tr id="csvRow_${i}" style="border-bottom:1px solid #eee">
+      <td style="padding:5px 6px;border:1px solid #eee;text-align:center;color:var(--gray-mid)">${i+1}</td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="question_ar" rows="2" dir="auto" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical;font-family:'Noto Serif Bengali',Amiri,serif">${escHtml(q.question_ar||'')}</textarea></td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="opt_a" rows="2" dir="auto" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical;font-family:'Noto Serif Bengali',Amiri,serif">${escHtml(q.opt_a||'')}</textarea></td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="opt_b" rows="2" dir="auto" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical;font-family:'Noto Serif Bengali',Amiri,serif">${escHtml(q.opt_b||'')}</textarea></td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="opt_c" rows="2" dir="auto" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical;font-family:'Noto Serif Bengali',Amiri,serif">${escHtml(q.opt_c||'')}</textarea></td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="opt_d" rows="2" dir="auto" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical;font-family:'Noto Serif Bengali',Amiri,serif">${escHtml(q.opt_d||'')}</textarea></td>
+      <td style="padding:4px;text-align:center">
+        <select data-i="${i}" data-f="correct" style="width:52px;padding:4px;border:1px solid #ddd;border-radius:5px;font-size:.85em">
+          ${correctOpts.map(o=>`<option value="${o}" ${q.correct===o?'selected':''}>${lblMap[o]}</option>`).join('')}
+        </select>
+      </td>
+      <td style="padding:4px"><textarea data-i="${i}" data-f="explanation_bn" rows="2" style="width:100%;font-size:.82em;border:1px solid #ddd;border-radius:5px;padding:4px;resize:vertical">${escHtml(q.explanation_bn||'')}</textarea></td>
+      <td style="padding:4px;text-align:center">
+        <button onclick="removeCSVRow(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:1.1em" title="বাদ দিন">✖</button>
+      </td>
+    </tr>`).join('');
+
+  // live edit — textarea/select পরিবর্তনে data আপডেট
+  tbody.querySelectorAll('textarea, select').forEach(el => {
+    el.addEventListener('input', () => {
+      const i = +el.dataset.i;
+      const f = el.dataset.f;
+      if(_csvPreviewData[i]) _csvPreviewData[i][f] = el.value;
+    });
+  });
+
+  document.getElementById('csvPreviewTitle').textContent = `${qs.length}টি প্রশ্ন প্রস্তুত — প্রয়োজনে এডিট করুন`;
+  document.getElementById('csvPreviewSection').style.display = 'block';
+  document.getElementById('csvPreviewSection').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function removeCSVRow(i){
+  _csvPreviewData.splice(i, 1);
+  const subject = document.getElementById('qbCsvSubject')?.value || '';
+  renderCSVPreview(_csvPreviewData, subject);
+}
+
+function cancelCSVPreview(){
+  _csvPreviewData = [];
+  document.getElementById('csvPreviewSection').style.display = 'none';
+  document.getElementById('qbCsvFile').value = '';
+}
+
+async function saveCSVPreview(){
+  if(!_csvPreviewData.length) return showToast('কোনো প্রশ্ন নেই', 'error');
+  // সর্বশেষ textarea/select এর value sync করো
+  document.querySelectorAll('#csvPreviewBody textarea, #csvPreviewBody select').forEach(el => {
+    const i = +el.dataset.i;
+    const f = el.dataset.f;
+    if(_csvPreviewData[i] !== undefined) _csvPreviewData[i][f] = el.value;
+  });
+  // খালি প্রশ্ন বাদ দাও
+  const qs = _csvPreviewData.filter(q => q.question_ar && q.question_ar.trim());
+  if(!qs.length) return showToast('কোনো প্রশ্ন নেই', 'error');
+  try{
+    await api('questions?on_conflict=question_ar,opt_a', 'POST', qs, {'Prefer':'resolution=ignore'});
+    showToast(`✅ ${qs.length}টি প্রশ্ন সেভ হয়েছে (duplicate স্বয়ংক্রিয়ভাবে বাদ)`);
+    cancelCSVPreview();
+    loadQuestions();
+    loadBuilder();
+  }catch(err){ showToast('❌ সেভ ব্যর্থ: ' + (err.message || 'অজানা'), 'error'); }
+}
+
+// পুরনো uploadCSV — পিছনের compatibility এর জন্য রাখা
+function uploadCSV(inputId='qbCsvFile'){
+  previewCSV(inputId);
+}
+
+async function loadAdminTestsForResult(){
+  const bId = document.getElementById('resAdminBatch').value;
+  document.getElementById('adminResultDisplay').style.display = 'none';
+  if(!bId) return;
+  const tests = await api(`tests?batch_id=eq.${bId}&order=id.desc`);
+  document.getElementById('resAdminTest').innerHTML = '<option value="">টেস্ট নির্বাচন করুন</option>' + tests.map(t => `<option value="${t.id}">${escHtml(t.name)}</option>`).join('');
+}
+
+async function loadAdminResults(){
+  const tid = document.getElementById('resAdminTest').value;
+  if(!tid) return;
+  const atts = await api(`attempts?test_id=eq.${tid}&is_practice=eq.false&order=score.desc&select=score,students(name,phone)`);
+  const test = await api(`tests?id=eq.${tid}`);
+  const title = test.length ? test[0].name : 'ফলাফল';
+  const subtitle = test.length ? `পূর্ণমান: ${test[0].total_marks} | মোট পরীক্ষার্থী: ${atts.length}` : '';
+  document.getElementById('adminResTitle').textContent = title;
+  document.getElementById('adminResSubTitle').textContent = subtitle;
+  lastResultData = { title, subtitle, rows: atts };
+  document.getElementById('adminResBody').innerHTML = atts.length ? atts.map((a,i) => `<tr>
+      <td>${i<3?['🥇','🥈','🥉'][i]:i+1}</td>
+      <td>${escHtml(a.students?.name || '—')}</td>
+      <td style="font-family:monospace">${escHtml(a.students?.phone || '—')}</td>
+      <td><b>${a.score}</b></td>
+    </tr>`).join('') : '<tr><td colspan="4" class="empty-msg">কোনো ফলাফল নেই</td></tr>';
+  document.getElementById('adminResultDisplay').style.display = 'block';
+}
+
+async function loadAdminStudents(){
+  const bId = document.getElementById('stuFilterBatch').value;
+  const f = bId ? `batch_id=eq.${bId}&` : '';
+  const raw = await api(`students?${f}order=id.desc&select=*,batches(name)`);
+  allStudents = dedupeStudents(raw);
+  renderStudentTable(allStudents);
+}
+
+function filterStudents(){
+  const q = document.getElementById('stuSearch').value.toLowerCase();
+  renderStudentTable(allStudents.filter(s => (s.name || '').toLowerCase().includes(q) || (s.phone || '').includes(q)));
+}
+
+function renderStudentTable(sts){
+  document.getElementById('adminStBody').innerHTML = sts.length ? sts.map((s,i) => `<tr>
+      <td><input type="checkbox" class="stuCheck" data-id="${s.id}"></td>
+      <td>${i+1}</td><td>${escHtml(s.name || '')}</td>
+      <td style="font-family:monospace">${escHtml(s.phone || '—')}</td>
+      <td>${escHtml(s.batches?.name || '—')}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-small btn-gold" onclick="openStudentEdit(${s.id})">✏️</button>
+        <button class="btn btn-small btn-danger" onclick="deleteStudent(${s.id})">🗑</button>
+      </td>
+    </tr>`).join('') : '<tr><td colspan="6" class="empty-msg">কোনো শিক্ষার্থী নেই</td></tr>';
+}
+
+function toggleAllStudents(checked){
+  document.querySelectorAll('.stuCheck').forEach(cb => cb.checked = checked);
+}
+
+async function deleteSelectedStudents(){
+  const checked = [...document.querySelectorAll('.stuCheck:checked')];
+  if(!checked.length) return showToast('কোনো শিক্ষার্থী নির্বাচন করা নেই', 'error');
+  if(!confirm(`${checked.length} জন শিক্ষার্থী মুছে ফেলবেন?`)) return;
+  try{
+    const ids = checked.map(cb => cb.dataset.id);
+    for(const id of ids){
+      await api(`attempts?student_id=eq.${id}`, 'DELETE');
+      await api(`students?id=eq.${id}`, 'DELETE');
+    }
+    showToast(`✅ ${ids.length} জন শিক্ষার্থী মুছে ফেলা হয়েছে`);
+    loadAdminStudents();
+  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
+}
+
+async function openStudentEdit(id){
+  const s = allStudents.find(x => x.id == id) || (await api(`students?id=eq.${id}`))?.[0];
+  if(!s) return showToast('শিক্ষার্থী পাওয়া যায়নি', 'error');
+  document.getElementById('studentEditId').value = s.id;
+  document.getElementById('studentEditName').value = s.name || '';
+  document.getElementById('studentEditPhone').value = s.phone || '';
+  openModal('studentEditModal');
+}
+
+function closeStudentEditModal(){
+  closeModal('studentEditModal');
+}
+
+async function saveStudentEdit(){
+  const id = parseInt(document.getElementById('studentEditId').value);
+  const name = document.getElementById('studentEditName').value.trim();
+  const phone = document.getElementById('studentEditPhone').value.trim();
+  if(!id) return;
+  if(!name || !phone) return showToast('নাম ও মোবাইল দিন', 'error');
+  try{
+    await api(`students?id=eq.${id}`, 'PATCH', { name, phone });
+    showToast('✅ শিক্ষার্থী আপডেট হয়েছে');
+    closeStudentEditModal();
+    loadAdminStudents();
+  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
+}
+
+async function deleteStudent(id){
+  if(!confirm('এই শিক্ষার্থীকে মুছবেন?')) return;
+  try{
+    await api(`attempts?student_id=eq.${id}`, 'DELETE');
+    await api(`students?id=eq.${id}`, 'DELETE');
+    showToast('✅ শিক্ষার্থী মুছে ফেলা হয়েছে');
+    loadAdminStudents();
+  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
+}
+
+async function loadAdminSettings(){
+  try{
+    const [batches, students, tests, settings] = await Promise.all([
+      Promise.resolve(globalBatches.length),
+      api('students?select=id'),
+      api('tests?select=id'),
+      api('settings?id=eq.1')
+    ]);
+    document.getElementById('sysInfo').innerHTML = `
+      <div style="display:grid;gap:8px">
+        <div class="modal-info-row"><span>📁 মোট ব্যাচ</span><b>${batches}</b></div>
+        <div class="modal-info-row"><span>👥 মোট শিক্ষার্থী</span><b>${students.length}</b></div>
+        <div class="modal-info-row"><span>📝 মোট পরীক্ষা</span><b>${tests.length}</b></div>
+      </div>`;
+    const appLink = settings && settings[0] ? (settings[0].app_download_link || '') : '';
+    document.getElementById('appDownloadLink').value = appLink;
+    await loadSplashAndAnnouncement();
+  }catch(e){
+    document.getElementById('sysInfo').textContent = 'তথ্য লোড করা যায়নি';
+  }
+}
+
+async function changeAdminPass(){
+  const cur = document.getElementById('curPass').value;
+  const nw = document.getElementById('newPass').value;
+  const cf = document.getElementById('confPass').value;
+  if(!cur || !nw || !cf) return showToast('সব ঘর পূরণ করুন', 'error');
+  if(nw.length < 6) return showToast('পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে', 'error');
+  if(nw !== cf) return showToast('দুটি পাসওয়ার্ড মিলছে না', 'error');
+  try{
+    const s = await api('settings?id=eq.1');
+    const stored = (s && s.length) ? (s[0].admin_pass || '') : _k;
+    if(cur !== stored) return showToast('বর্তমান পাসওয়ার্ড ভুল', 'error');
+    if(s && s.length) await api('settings?id=eq.1', 'PATCH', { admin_pass:nw });
+    else await api('settings', 'POST', { id:1, admin_pass:nw });
+    showToast('✅ পাসওয়ার্ড পরিবর্তন সফল');
+    document.getElementById('curPass').value = '';
+    document.getElementById('newPass').value = '';
+    document.getElementById('confPass').value = '';
+  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
+}
+
+async function saveAppDownloadLink(){
+  const link = document.getElementById('appDownloadLink').value.trim();
+  try{
+    const s = await api('settings?id=eq.1');
+    if(!s || !s.length) await api('settings', 'POST', { id:1, app_download_link:link });
+    else await api('settings?id=eq.1', 'PATCH', { app_download_link:link });
+    showToast('✅ অ্যাপ লিংক সংরক্ষিত');
+  }catch(e){ showToast('❌ ব্যর্থ: ' + e.message, 'error'); }
+}
+
+async function loadSplashAndAnnouncement(){
+  try{
+    const s = await api('settings?id=eq.1');
+    if(s && s[0]){
+      document.getElementById('splashTitle').value = s[0].splash_title || 'জ্ঞানাঙ্গন';
+      document.getElementById('splashSubtitle').value = s[0].splash_subtitle || 'Learn smartly, be smarter.';
+      document.getElementById('splashMessage').value = s[0].splash_message || '';
+      document.getElementById('announcementTitle').value = s[0].announcement_title || '';
+      document.getElementById('announcementText').value = s[0].announcement_text || '';
+      // live notice toggle
+      const tog = document.getElementById('liveNoticeToggle');
+      if(tog) tog.checked = (s[0].show_live_notice !== false); // default true
+    }
+  }catch(e){console.error('Settings load error:', e);}
+}
+
+async function saveLiveNoticeToggle(){
+  const val = document.getElementById('liveNoticeToggle').checked;
+  try{
+    const s = await api('settings?id=eq.1');
+    if(s && s.length) await api('settings?id=eq.1','PATCH',{show_live_notice:val});
+    else await api('settings','POST',{id:1,show_live_notice:val});
+    showToast(val ? '✅ লাইভ নোটিফিকেশন চালু করা হয়েছে' : '✅ লাইভ নোটিফিকেশন বন্ধ করা হয়েছে');
+  }catch(e){showToast('❌ সংরক্ষণ ব্যর্থ','error');}
+}
+
+async function saveSplashSettings(){
+  const splash_title = document.getElementById('splashTitle').value.trim() || 'জ্ঞানাঙ্গন';
+  const splash_subtitle = document.getElementById('splashSubtitle').value.trim() || 'Learn smartly, be smarter.';
+  const splash_message = document.getElementById('splashMessage').value.trim();
+  try{
+    const s = await api('settings?id=eq.1');
+    const data = { splash_title, splash_subtitle, splash_message };
+    if(s && s.length) await api('settings?id=eq.1', 'PATCH', data);
+    else await api('settings', 'POST', { id:1, ...data });
+    showToast('✅ স্প্ল্যাশ তথ্য সংরক্ষিত');
+  }catch(e){showToast('❌ ব্যর্থ: '+e.message,'error');}
+}
+
+async function saveAnnouncement(){
+  const announcement_title = document.getElementById('announcementTitle').value.trim() || 'ঘোষণা';
+  const announcement_text = document.getElementById('announcementText').value.trim();
+  if(!announcement_text){
+    showToast('ঘোষণা লিখুন','error');
+    return;
+  }
+  const announcement_id = Date.now().toString();
+  try{
+    const s = await api('settings?id=eq.1');
+    const data = { announcement_text, announcement_id, announcement_title };
+    if(s && s.length) await api('settings?id=eq.1', 'PATCH', data);
+    else await api('settings', 'POST', { id:1, ...data });
+    showToast('✅ ঘোষণা সংরক্ষিত — সবাই পপআপ দেখতে পাবে');
+  }catch(e){showToast('❌ ব্যর্থ: '+e.message,'error');}
+}
+
+async function clearAnnouncement(){
+  if(!confirm('ঘোষণা মুছে ফেলবেন? সবার কাছে আর পপআপ দেখাবে না।')) return;
+  try{
+    await api('settings?id=eq.1', 'PATCH', { announcement_text:'', announcement_id:'' });
+    document.getElementById('announcementText').value = '';
+    showToast('✅ ঘোষণা মুছে ফেলা হয়েছে');
+  }catch(e){showToast('❌ ব্যর্থ: '+e.message,'error');}
+}
+
+window.onload = async () => {
+  try{
+    await seedDefaultBatches();
+    await seedSettings();
+    await refreshGlobalBatches();
+  }catch(_){ }
+  syncHeader();
+  if(isAdmin()){
+    goTo('screenAdminPanel');
+    switchAdminTab('dash', document.querySelector('.sidebar .nav-item'));
+  }else{
+    goTo('screenAdminLogin');
+  }
+  document.getElementById('logoBtn').onclick = () => {
+    if(isAdmin()) switchAdminTab('dash', document.querySelector('.sidebar .nav-item'));
+    else goTo('screenAdminLogin');
+  };
+};
+</script>
+</body>
+</html>
